@@ -1,9 +1,12 @@
-import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native'
-import {Ionicons} from '@expo/vector-icons'
-import {useRouter} from 'expo-router'
-import {useColorScheme} from "@/components/useColorScheme.web";
-import {Colors} from '@/constants/Colors'
-import type {Restaurant} from '@/types'
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
+import { useState } from 'react'
+import { useColorScheme } from "@/components/useColorScheme.web"
+import { Colors } from '@/constants/Colors'
+import { useAuth } from '@/contexts/AuthContext'
+import { AuthModal} from "@/components/ui/AutoModal";
+import type { Restaurant } from '@/types'
 
 interface RestaurantCardProps {
     restaurant: Restaurant
@@ -19,6 +22,8 @@ export function RestaurantCard({
     const colorScheme = useColorScheme() ?? 'light'
     const colors = Colors[colorScheme]
     const router = useRouter()
+    const { user } = useAuth()
+    const [showAuthModal, setShowAuthModal] = useState(false)
 
     const lowestPrice = restaurant.student_menu?.[0]?.price || 'N/A'
 
@@ -26,74 +31,90 @@ export function RestaurantCard({
         router.push(`/restaurant/${restaurant.id}`)
     }
 
+    const handleFavoriteClick = () => {
+        if (!user) {
+            setShowAuthModal(true)
+            return
+        }
+        onToggleFavorite?.()
+    }
+
     return (
-        <TouchableOpacity
-            onPress={handlePress}
-            activeOpacity={0.8}
-            style={[
-                styles.card,
-                {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                },
-            ]}
-        >
-            {/* Image */}
-            <Image
-                source={{
-                    uri: restaurant.image || `https://placehold.co/400x200/F97316/FFFFFF?text=${encodeURIComponent(restaurant.name)}`,
-                }}
-                style={styles.image}
-                resizeMode="cover"
-            />
+        <>
+            <TouchableOpacity
+                onPress={handlePress}
+                activeOpacity={0.8}
+                style={[
+                    styles.card,
+                    {
+                        backgroundColor: colors.surface,
+                        borderColor: colors.border,
+                    },
+                ]}
+            >
+                {/* Image */}
+                <Image
+                    source={{
+                        uri: restaurant.image || `https://placehold.co/400x200/F97316/FFFFFF?text=${encodeURIComponent(restaurant.name)}`,
+                    }}
+                    style={styles.image}
+                    resizeMode="cover"
+                />
 
-            {/* Bouton favori */}
-            {onToggleFavorite && (
-                <TouchableOpacity
-                    onPress={onToggleFavorite}
-                    style={styles.favoriteButton}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                    <Ionicons
-                        name={isFavorite ? 'heart' : 'heart-outline'}
-                        size={24}
-                        color={isFavorite ? '#EF4444' : '#FFFFFF'}
-                    />
-                </TouchableOpacity>
-            )}
+                {/* Bouton favori */}
+                {onToggleFavorite && (
+                    <TouchableOpacity
+                        onPress={handleFavoriteClick}
+                        style={styles.favoriteButton}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                        <Ionicons
+                            name={isFavorite ? 'heart' : 'heart-outline'}
+                            size={24}
+                            color={isFavorite ? '#EF4444' : '#FFFFFF'}
+                        />
+                    </TouchableOpacity>
+                )}
 
-            {/* Contenu */}
-            <View style={styles.content}>
-                <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
-                    {restaurant.name}
-                </Text>
-
-                <View style={styles.row}>
-                    <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
-                    <Text style={[styles.address, { color: colors.textSecondary }]} numberOfLines={1}>
-                        {restaurant.address}, {restaurant.city}
+                {/* Contenu */}
+                <View style={styles.content}>
+                    <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
+                        {restaurant.name}
                     </Text>
-                </View>
-
-                <View style={styles.footer}>
-                    <View style={styles.priceContainer}>
-                        <Text style={[styles.priceLabel, { color: colors.textSecondary }]}>
-                            Menu dès
-                        </Text>
-                        <Text style={[styles.price, { color: colors.primary }]}>
-                            {lowestPrice}
-                        </Text>
-                    </View>
 
                     <View style={styles.row}>
-                        <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
-                        <Text style={[styles.hours, { color: colors.textSecondary }]} numberOfLines={1}>
-                            {restaurant.opening_hours}
+                        <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
+                        <Text style={[styles.address, { color: colors.textSecondary }]} numberOfLines={1}>
+                            {restaurant.address}, {restaurant.city}
                         </Text>
                     </View>
+
+                    <View style={styles.footer}>
+                        <View style={styles.priceContainer}>
+                            <Text style={[styles.priceLabel, { color: colors.textSecondary }]}>
+                                Menu dès
+                            </Text>
+                            <Text style={[styles.price, { color: colors.primary }]}>
+                                {lowestPrice}
+                            </Text>
+                        </View>
+
+                        <View style={styles.row}>
+                            <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+                            <Text style={[styles.hours, { color: colors.textSecondary }]} numberOfLines={1}>
+                                {restaurant.opening_hours}
+                            </Text>
+                        </View>
+                    </View>
                 </View>
-            </View>
-        </TouchableOpacity>
+            </TouchableOpacity>
+
+            <AuthModal
+                visible={showAuthModal}
+                onClose={() => setShowAuthModal(false)}
+                message="Connecte-toi pour sauvegarder tes restaurants favoris"
+            />
+        </>
     )
 }
 

@@ -18,6 +18,7 @@ export interface Restaurant {
     student_menu: MenuItem[]
     created_at?: string
     subscription_status: 'active' | 'inactive' | 'expired'
+    owner_id?: string
 }
 
 // Types pour les favoris
@@ -30,4 +31,37 @@ export interface FavoriteRestaurant {
 export interface UserLocation {
     latitude: number
     longitude: number
+}
+
+// Types pour l'authentification
+export interface Profile {
+    id: string
+    email: string
+    full_name?: string
+    avatar_url?: string
+    role: 'student' | 'restaurant_owner' | 'admin'
+    restaurant_id?: string
+    created_at: string
+    updated_at: string
+}
+
+export interface AuthUser {
+    id: string
+    email: string
+    profile?: Profile
+}
+
+// Types pour les avis
+export interface Review {
+    id: string
+    user_id: string
+    restaurant_id: string
+    rating: number
+    comment?: string
+    created_at: string
+    updated_at: string
+    user?: {
+        full_name?: string
+        avatar_url?: string
+    }
 }
