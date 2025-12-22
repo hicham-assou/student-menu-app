@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useState} from 'react'
 import {getRestaurants, searchRestaurants} from '@/lib/api'
 import {getFavorites, toggleFavorite as toggleFav} from '@/lib/favorites'
+import {useAuth} from '@/contexts/AuthContext'
 import type {Restaurant} from '@/types'
 
 export function useRestaurants() {
@@ -9,6 +10,7 @@ export function useRestaurants() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [searchQuery, setSearchQuery] = useState('')
+    const {user} = useAuth()
 
     const loadRestaurants = useCallback(async () => {
         try {
@@ -27,23 +29,48 @@ export function useRestaurants() {
     }, [searchQuery])
 
     const loadFavorites = useCallback(async () => {
-        const favs = await getFavorites()
-        setFavorites(favs)
-    }, [])
+        if (!user) {
+            setFavorites([])
+            return
+        }
+
+        try {
+            const favs = await getFavorites()
+            setFavorites(favs)
+        } catch (err) {
+            console.error('Error loading favorites:', err)
+            setFavorites([])
+        }
+    }, [user])
 
     useEffect(() => {
         loadRestaurants()
+    }, [loadRestaurants])
+
+    useEffect(() => {
         loadFavorites()
-    }, [loadRestaurants, loadFavorites])
+    }, [loadFavorites])
 
     const toggleFavorite = async (restaurantId: string) => {
-        const isFav = await toggleFav(restaurantId)
-        if (isFav) {
-            setFavorites((prev) => [...prev, restaurantId])
-        } else {
-            setFavorites((prev) => prev.filter((id) => id !== restaurantId))
+        if (!user) {
+            return false
         }
-        return isFav
+
+        try {
+            const isFav = await toggleFav(restaurantId)
+
+            // Mettre à jour l'état local
+            if (isFav) {
+                setFavorites((prev) => [...prev, restaurantId])
+            } else {
+                setFavorites((prev) => prev.filter((id) => id !== restaurantId))
+            }
+
+            return isFav
+        } catch (err) {
+            console.error('Error toggling favorite:', err)
+            return false
+        }
     }
 
     const isFavorite = (restaurantId: string) => favorites.includes(restaurantId)
