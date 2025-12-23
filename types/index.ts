@@ -16,6 +16,7 @@ export interface Restaurant {
     opening_hours: string
     image?: string
     student_menu: MenuItem[]
+    student_menu_conditions?: string
     created_at?: string
     subscription_status: 'active' | 'inactive' | 'expired'
     owner_id?: string
