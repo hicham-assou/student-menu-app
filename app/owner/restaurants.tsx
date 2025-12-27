@@ -1,137 +1,109 @@
-import {Alert, FlatList, Image, RefreshControl, StyleSheet, Text, TouchableOpacity, View,} from 'react-native'
-import {SafeAreaView} from 'react-native-safe-area-context'
-import {useRouter} from 'expo-router'
-import {Ionicons} from '@expo/vector-icons'
-import {useCallback, useEffect, useState} from 'react'
-import {useColorScheme} from '@/components/useColorScheme.web'
-import {Colors} from '@/constants/Colors'
-import {useAuth} from '@/contexts/AuthContext'
-import {getMyRestaurants} from '@/lib/restaurants'
-import {Button} from '@/components/ui/Button'
-import type {Restaurant} from '@/types'
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { useRouter } from "expo-router"
+import { Ionicons } from "@expo/vector-icons"
+import { useEffect, useState } from "react"
+import { useColorScheme } from "@/components/useColorScheme.web"
+import { Colors } from "@/constants/Colors"
+import { getMyRestaurants } from "@/lib/restaurants"
+import type { Restaurant } from "@/types"
 
 export default function MyRestaurantsScreen() {
-    const colorScheme = useColorScheme() ?? 'light'
+    const colorScheme = useColorScheme() ?? "light"
     const colors = Colors[colorScheme]
     const router = useRouter()
-    const {user} = useAuth()
 
     const [restaurants, setRestaurants] = useState<Restaurant[]>([])
     const [loading, setLoading] = useState(true)
 
-    const loadRestaurants = useCallback(async () => {
-        if (!user) {
-            setRestaurants([])
-            setLoading(false)
-            return
-        }
+    useEffect(() => {
+        loadRestaurants()
+    }, [])
 
+    const loadRestaurants = async () => {
         try {
-            setLoading(true)
             const data = await getMyRestaurants()
             setRestaurants(data)
         } catch (error) {
-            console.error('Error loading restaurants:', error)
-            Alert.alert('Erreur', 'Impossible de charger les restaurants')
+            console.error("Error loading restaurants:", error)
         } finally {
             setLoading(false)
         }
-    }, [user])
-
-    useEffect(() => {
-        loadRestaurants()
-    }, [loadRestaurants])
-
-    if (!user) {
-        return (
-            <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
-                <View style={styles.emptyContainer}>
-                    <Ionicons name="business-outline" size={64} color={colors.textSecondary}/>
-                    <Text style={[styles.emptyTitle, {color: colors.text}]}>
-                        Connexion requise
-                    </Text>
-                    <Text style={[styles.emptySubtitle, {color: colors.textSecondary}]}>
-                        Connecte-toi pour gérer tes restaurants
-                    </Text>
-                    <Button
-                        title="Se connecter"
-                        onPress={() => router.push('/auth/login')}
-                        style={styles.button}
-                    />
-                </View>
-            </SafeAreaView>
-        )
     }
 
-    if (!loading && restaurants.length === 0) {
+    if (loading) {
         return (
-            <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color={colors.text}/>
-                    </TouchableOpacity>
-                    <Text style={[styles.headerTitle, {color: colors.text}]}>Mes Restaurants</Text>
-                </View>
-                <View style={styles.emptyContainer}>
-                    <Ionicons name="restaurant-outline" size={64} color={colors.textSecondary}/>
-                    <Text style={[styles.emptyTitle, {color: colors.text}]}>
-                        Aucun restaurant
-                    </Text>
-                    <Text style={[styles.emptySubtitle, {color: colors.textSecondary}]}>
-                        Tu n'as pas encore de restaurant enregistré
-                    </Text>
+            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+                <View style={styles.loading}>
+                    <Text style={{ color: colors.textSecondary }}>Chargement...</Text>
                 </View>
             </SafeAreaView>
         )
     }
 
     return (
-        <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={colors.text}/>
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, {color: colors.text}]}>Mes Restaurants</Text>
-            </View>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.content}>
+                    <Text style={[styles.title, { color: colors.text }]}>Mes restaurants</Text>
 
-            <FlatList
-                data={restaurants}
-                keyExtractor={(item) => item.id}
-                renderItem={({item}) => (
-                    <TouchableOpacity
-                        onPress={() => router.push(`/owner/edit/${item.id}`)}
-                        style={[styles.restaurantCard, {backgroundColor: colors.surface, borderColor: colors.border}]}
-                    >
-                        <Image
-                            source={{
-                                uri: item.image || `https://placehold.co/200x150/F97316/FFFFFF?text=${encodeURIComponent(item.name)}`,
-                            }}
-                            style={styles.restaurantImage}
-                            resizeMode="cover"
-                        />
-                        <View style={styles.restaurantInfo}>
-                            <Text style={[styles.restaurantName, {color: colors.text}]}>{item.name}</Text>
-                            <View style={styles.restaurantDetail}>
-                                <Ionicons name="location" size={14} color={colors.textSecondary}/>
-                                <Text style={[styles.restaurantAddress, {color: colors.textSecondary}]}>
-                                    {item.address}, {item.city}
-                                </Text>
-                            </View>
+                    {restaurants.length === 0 ? (
+                        <View style={styles.emptyContainer}>
+                            <Ionicons name="restaurant-outline" size={64} color={colors.textSecondary} />
+                            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Aucun restaurant pour le moment</Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary}/>
-                    </TouchableOpacity>
-                )}
-                contentContainerStyle={styles.list}
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={loading}
-                        onRefresh={loadRestaurants}
-                        tintColor={colors.primary}
-                        colors={[colors.primary]}
-                    />
-                }
-            />
+                    ) : (
+                        restaurants.map((restaurant) => (
+                            <TouchableOpacity
+                                key={restaurant.id}
+                                activeOpacity={0.7}
+                                onPress={() => router.push(`/restaurant/${restaurant.id}`)}
+                            >
+                                <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                                    <Image
+                                        source={{
+                                            uri:
+                                                restaurant.image ||
+                                                `https://placehold.co/400x200/F97316/FFFFFF?text=${encodeURIComponent(restaurant.name)}`,
+                                        }}
+                                        style={styles.image}
+                                    />
+                                    <View style={styles.cardContent}>
+                                        <Text style={[styles.restaurantName, { color: colors.text }]}>{restaurant.name}</Text>
+                                        <Text style={[styles.restaurantAddress, { color: colors.textSecondary }]}>
+                                            {restaurant.address}, {restaurant.city}
+                                        </Text>
+
+                                        <View style={styles.actions}>
+                                            <TouchableOpacity
+                                                onPress={(e) => {
+                                                    e.stopPropagation()
+                                                    router.push(`/owner/edit/${restaurant.id}`)
+                                                }}
+                                                style={[styles.button, { backgroundColor: colors.primary }]}
+                                            >
+                                                <Ionicons name="create-outline" size={18} color="#FFFFFF" />
+                                                <Text style={styles.buttonText}>Modifier</Text>
+                                            </TouchableOpacity>
+
+                                            <TouchableOpacity
+                                                onPress={(e) => {
+                                                    e.stopPropagation()
+                                                    router.push(`/owner/stats/${restaurant.id}`)
+                                                }}
+                                                style={[styles.button, { backgroundColor: "#10B981" }]}
+                                            >
+                                                <Ionicons name="stats-chart" size={18} color="#FFFFFF" />
+                                                <Text style={styles.buttonText}>Statistiques</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </View>
+                            </TouchableOpacity>
+                        ))
+                    )}
+                </View>
+            </ScrollView>
         </SafeAreaView>
     )
 }
@@ -140,71 +112,65 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        gap: 12,
+    loading: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
     },
-    backButton: {
-        padding: 4,
+    content: {
+        padding: 20,
     },
-    headerTitle: {
-        fontSize: 24,
-        fontWeight: '700',
+    title: {
+        fontSize: 28,
+        fontWeight: "700",
+        marginBottom: 24,
     },
-    list: {
+    card: {
+        borderRadius: 16,
+        borderWidth: 1,
+        marginBottom: 16,
+        overflow: "hidden",
+    },
+    image: {
+        width: "100%",
+        height: 160,
+    },
+    cardContent: {
         padding: 16,
     },
-    restaurantCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderRadius: 12,
-        padding: 12,
-        marginBottom: 12,
-        gap: 12,
-    },
-    restaurantImage: {
-        width: 80,
-        height: 80,
-        borderRadius: 8,
-    },
-    restaurantInfo: {
-        flex: 1,
-        gap: 6,
-    },
     restaurantName: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    restaurantDetail: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
+        fontSize: 20,
+        fontWeight: "600",
+        marginBottom: 4,
     },
     restaurantAddress: {
-        fontSize: 13,
-        flex: 1,
+        fontSize: 14,
+        marginBottom: 16,
     },
-    emptyContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 40,
+    actions: {
+        flexDirection: "row",
         gap: 12,
     },
-    emptyTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-    },
-    emptySubtitle: {
-        fontSize: 15,
-        textAlign: 'center',
-        marginBottom: 20,
-    },
     button: {
-        minWidth: 200,
+        flex: 1,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+        paddingVertical: 10,
+        borderRadius: 10,
+    },
+    buttonText: {
+        color: "#FFFFFF",
+        fontSize: 14,
+        fontWeight: "600",
+    },
+    emptyContainer: {
+        alignItems: "center",
+        paddingVertical: 60,
+        gap: 16,
+    },
+    emptyText: {
+        fontSize: 16,
     },
 })

@@ -38,7 +38,6 @@ export default function SignupScreen() {
 
         try {
             setLoading(true)
-            console.log("siignupppp")
             await signUp(email, password, fullName || undefined)
             Alert.alert('Succes', 'Compte cree avec succes !', [
                 {text: 'OK', onPress: () => router.back()}

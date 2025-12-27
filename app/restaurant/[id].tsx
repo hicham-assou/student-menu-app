@@ -21,6 +21,7 @@ import {getRestaurants} from "@/lib/api"
 import {isFavorite as checkFavorite, toggleFavorite} from "@/lib/favorites"
 import {getRestaurantReviews, getRestaurantReviewStats, getUserReview} from "@/lib/reviews"
 import {isRestaurantOwner} from "@/lib/restaurants"
+import {trackEvent} from "@/lib/analytics"
 import {ReviewStats} from "@/components/reviews/ReviewStats"
 import {ReviewForm} from "@/components/reviews/ReviewForm"
 import {ReviewCard} from "@/components/reviews/ReviewCard"
@@ -117,6 +118,13 @@ export default function RestaurantDetailScreen() {
         loadData()
     }, [loadData])
 
+    // Tracking automatique des vues de restaurant
+    useEffect(() => {
+        if (id) {
+            trackEvent(id, "view")
+        }
+    }, [id])
+
     const handleToggleFavorite = async () => {
         if (!user) {
             setShowAuthModal(true)
@@ -128,6 +136,7 @@ export default function RestaurantDetailScreen() {
         try {
             const newFavState = await toggleFavorite(id)
             setIsFav(newFavState)
+            await trackEvent(id, newFavState ? "favorite" : "unfavorite")
         } catch (error) {
             Alert.alert("Erreur", "Impossible de modifier le favori")
         }
@@ -148,12 +157,14 @@ export default function RestaurantDetailScreen() {
 
     const handleCall = () => {
         if (restaurant?.phone) {
+            if (id) trackEvent(id, "call")
             Linking.openURL(`tel:${restaurant.phone}`)
         }
     }
 
     const handleDirections = () => {
         if (restaurant) {
+            if (id) trackEvent(id, "directions")
             const url = `https://www.google.com/maps/dir/?api=1&destination=${restaurant.latitude},${restaurant.longitude}`
             Linking.openURL(url)
         }
@@ -205,12 +216,9 @@ export default function RestaurantDetailScreen() {
                                   color={isFav ? "#EF4444" : "#FFFFFF"}/>
                     </TouchableOpacity>
 
-                    {/* <CHANGE> Bouton de modification pour les propriétaires */}
+                    {/* Bouton de modification pour les propriétaires */}
                     {isOwner && (
-                        <TouchableOpacity
-                            onPress={() => router.push(`/owner/edit/${id}`)}
-                            style={styles.editButton}
-                        >
+                        <TouchableOpacity onPress={() => router.push(`/owner/edit/${id}`)} style={styles.editButton}>
                             <Ionicons name="create-outline" size={24} color="#FFFFFF"/>
                         </TouchableOpacity>
                     )}
@@ -335,10 +343,13 @@ export default function RestaurantDetailScreen() {
 
                             {/* Info supplémentaire */}
                             <View
-                                style={[styles.menuFooter, {
-                                    backgroundColor: `${colors.primary}10`,
-                                    borderColor: colors.primary
-                                }]}
+                                style={[
+                                    styles.menuFooter,
+                                    {
+                                        backgroundColor: `${colors.primary}10`,
+                                        borderColor: colors.primary,
+                                    },
+                                ]}
                             >
                                 <Ionicons name="information-circle" size={18} color={colors.primary}/>
                                 <Text style={[styles.menuFooterText, {color: colors.text}]}>
