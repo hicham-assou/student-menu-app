@@ -23,6 +23,7 @@ export default function RootLayout() {
                 <Stack.Screen name="restaurant/[id]" options={{headerShown: false}}/>
                 <Stack.Screen name="owner/restaurants" options={{title: "Mes Restaurants"}}/>
                 <Stack.Screen name="owner/stats/[id]" options={{title: "Statistiques"}}/>
+                <Stack.Screen name="owner/edit/[id]" options={{title: "Modifier le restaurant"}}/>
             </Stack>
         </AuthProvider>
     )

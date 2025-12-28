@@ -171,14 +171,6 @@ export default function EditRestaurantScreen() {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
             >
-                {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color={colors.text}/>
-                    </TouchableOpacity>
-                    <Text style={[styles.headerTitle, {color: colors.text}]}>Modifier le restaurant</Text>
-                </View>
-
                 <ScrollView
                     style={styles.scrollView}
                     contentContainerStyle={styles.content}
@@ -389,20 +381,6 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        gap: 12,
-    },
-    backButton: {
-        padding: 4,
-    },
-    headerTitle: {
-        fontSize: 24,
-        fontWeight: '700',
     },
     scrollView: {
         flex: 1,
