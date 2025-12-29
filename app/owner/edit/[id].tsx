@@ -8,44 +8,106 @@ import {
     TextInput,
     TouchableOpacity,
     View,
-} from 'react-native'
-import {SafeAreaView} from 'react-native-safe-area-context'
-import {useLocalSearchParams, useRouter} from 'expo-router'
-import {Ionicons} from '@expo/vector-icons'
-import {useEffect, useState} from 'react'
-import {useColorScheme} from '@/components/useColorScheme.web'
-import {Colors} from '@/constants/Colors'
-import {useAuth} from '@/contexts/AuthContext'
-import {getRestaurants} from '@/lib/api'
-import {isRestaurantOwner, updateRestaurant} from '@/lib/restaurants'
-import {Button} from '@/components/ui/Button'
-import type {Restaurant} from '@/types'
+    Image,
+    ActivityIndicator,
+} from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { useLocalSearchParams, useRouter } from "expo-router"
+import { Ionicons } from "@expo/vector-icons"
+import { useEffect, useState } from "react"
+import { useColorScheme } from "@/components/useColorScheme.web"
+import { Colors } from "@/constants/Colors"
+import { useAuth } from "@/contexts/AuthContext"
+import { getRestaurants } from "@/lib/api"
+import { isRestaurantOwner, updateRestaurant } from "@/lib/restaurants"
+import { Button } from "@/components/ui/Button"
+import type { Restaurant } from "@/types"
+import * as ImagePicker from "expo-image-picker"
+import { supabase } from "@/lib/supabase"
+import FormData from "form-data"
 
 export default function EditRestaurantScreen() {
-    const colorScheme = useColorScheme() ?? 'light'
+    const colorScheme = useColorScheme() ?? "light"
     const colors = Colors[colorScheme]
-    const {id} = useLocalSearchParams<{ id: string }>()
+    const { id } = useLocalSearchParams<{ id: string }>()
     const router = useRouter()
-    const {user} = useAuth()
+    const { user } = useAuth()
 
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [isOwner, setIsOwner] = useState(false)
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
-
-    // États du formulaire
-    const [name, setName] = useState('')
-    const [address, setAddress] = useState('')
-    const [city, setCity] = useState('')
-    const [phone, setPhone] = useState('')
-    const [openingHours, setOpeningHours] = useState('')
-    const [description, setDescription] = useState('')
-    const [image, setImage] = useState('')
+    const [image, setImage] = useState("")
     const [studentMenus, setStudentMenus] = useState<Array<{ title: string; price: string }>>([])
+    const [uploading, setUploading] = useState(false)
+    const [name, setName] = useState("")
+    const [address, setAddress] = useState("")
+    const [city, setCity] = useState("")
+    const [phone, setPhone] = useState("")
+    const [openingHours, setOpeningHours] = useState("")
+    const [description, setDescription] = useState("")
 
     useEffect(() => {
         loadRestaurant()
+        requestPermissions()
     }, [id])
+
+    const requestPermissions = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+        if (status !== "granted") {
+            Alert.alert("Permission requise", "Nous avons besoin de la permission pour accéder à ta galerie.")
+        }
+    }
+
+    const pickImage = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [16, 9],
+                quality: 0.8,
+            })
+
+            if (!result.canceled && result.assets[0]) {
+                await uploadImage(result.assets[0])
+            }
+        } catch (error) {
+            console.error("Error picking image:", error)
+            Alert.alert("Erreur", "Impossible de sélectionner l'image")
+        }
+    }
+
+    const uploadImage = async (asset: ImagePicker.ImagePickerAsset) => {
+        setUploading(true)
+        try {
+            const fileName = `restaurant-${id}-${Date.now()}.jpg`
+            const filePath = `restaurants/${fileName}`
+
+            const formData = new FormData()
+            formData.append("file", {
+                uri: asset.uri,
+                name: fileName,
+                type: "image/jpeg",
+            } as any)
+
+            const { data, error } = await supabase.storage.from("restaurant-images").upload(filePath, formData, {
+                contentType: "image/jpeg",
+                upsert: true,
+            })
+
+            if (error) throw error
+
+            const { data: urlData } = supabase.storage.from("restaurant-images").getPublicUrl(filePath)
+            setImage(urlData.publicUrl)
+
+            Alert.alert("Succès", "Image uploadée avec succès")
+        } catch (error) {
+            console.error("Error uploading image:", error)
+            Alert.alert("Erreur", "Impossible d'uploader l'image")
+        } finally {
+            setUploading(false)
+        }
+    }
 
     const loadRestaurant = async () => {
         if (!id || !user) return
@@ -53,37 +115,35 @@ export default function EditRestaurantScreen() {
         try {
             setLoading(true)
 
-            // Vérifier que l'utilisateur est propriétaire
             const ownerStatus = await isRestaurantOwner(id)
             setIsOwner(ownerStatus)
 
             if (!ownerStatus) {
-                Alert.alert('Accès refusé', 'Tu n\'es pas le propriétaire de ce restaurant')
+                Alert.alert("Accès refusé", "Tu n'es pas le propriétaire de ce restaurant")
                 router.back()
                 return
             }
 
-            // Charger les données du restaurant
             const restaurants = await getRestaurants()
             const found = restaurants.find((r) => r.id === id)
 
             if (found) {
                 setRestaurant(found)
-                setName(found.name || '')
-                setAddress(found.address || '')
-                setCity(found.city || '')
-                setPhone(found.phone || '')
-                setOpeningHours(found.opening_hours || '')
-                setDescription(found.description || '')
-                setImage(found.image || '')
+                setName(found.name || "")
+                setAddress(found.address || "")
+                setCity(found.city || "")
+                setPhone(found.phone || "")
+                setOpeningHours(found.opening_hours || "")
+                setDescription(found.description || "")
+                setImage(found.image || "")
                 setStudentMenus(found.student_menu || [])
             } else {
-                Alert.alert('Erreur', 'Restaurant introuvable')
+                Alert.alert("Erreur", "Restaurant introuvable")
                 router.back()
             }
         } catch (error) {
-            console.error('Error loading restaurant:', error)
-            Alert.alert('Erreur', 'Impossible de charger le restaurant')
+            console.error("Error loading restaurant:", error)
+            Alert.alert("Erreur", "Impossible de charger le restaurant")
             router.back()
         } finally {
             setLoading(false)
@@ -91,14 +151,14 @@ export default function EditRestaurantScreen() {
     }
 
     const handleAddMenu = () => {
-        setStudentMenus([...studentMenus, {title: '', price: ''}])
+        setStudentMenus([...studentMenus, { title: "", price: "" }])
     }
 
     const handleRemoveMenu = (index: number) => {
         setStudentMenus(studentMenus.filter((_, i) => i !== index))
     }
 
-    const handleMenuChange = (index: number, field: 'title' | 'price', value: string) => {
+    const handleMenuChange = (index: number, field: "title" | "price", value: string) => {
         const newMenus = [...studentMenus]
         newMenus[index][field] = value
         setStudentMenus(newMenus)
@@ -107,18 +167,16 @@ export default function EditRestaurantScreen() {
     const handleSave = async () => {
         if (!id || !isOwner) return
 
-        // Validation
         if (!name.trim()) {
-            Alert.alert('Erreur', 'Le nom du restaurant est requis')
+            Alert.alert("Erreur", "Le nom du restaurant est requis")
             return
         }
 
         if (!address.trim() || !city.trim()) {
-            Alert.alert('Erreur', 'L\'adresse complète est requise')
+            Alert.alert("Erreur", "L'adresse complète est requise")
             return
         }
 
-        // Valider les menus
         const validMenus = studentMenus.filter((menu) => menu.title.trim() && menu.price.trim())
 
         try {
@@ -136,15 +194,13 @@ export default function EditRestaurantScreen() {
             })
 
             if (success) {
-                Alert.alert('Succès', 'Restaurant mis à jour avec succès', [
-                    {text: 'OK', onPress: () => router.back()},
-                ])
+                Alert.alert("Succès", "Restaurant mis à jour avec succès", [{ text: "OK", onPress: () => router.back() }])
             } else {
-                Alert.alert('Erreur', 'Impossible de mettre à jour le restaurant')
+                Alert.alert("Erreur", "Impossible de mettre à jour le restaurant")
             }
         } catch (error) {
-            console.error('Error saving restaurant:', error)
-            Alert.alert('Erreur', 'Une erreur est survenue lors de la sauvegarde')
+            console.error("Error saving restaurant:", error)
+            Alert.alert("Erreur", "Une erreur est survenue lors de la sauvegarde")
         } finally {
             setSaving(false)
         }
@@ -152,9 +208,9 @@ export default function EditRestaurantScreen() {
 
     if (loading) {
         return (
-            <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
+            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
                 <View style={styles.loading}>
-                    <Text style={{color: colors.textSecondary}}>Chargement...</Text>
+                    <Text style={{ color: colors.textSecondary }}>Chargement...</Text>
                 </View>
             </SafeAreaView>
         )
@@ -165,11 +221,11 @@ export default function EditRestaurantScreen() {
     }
 
     return (
-        <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]} edges={['bottom']}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["bottom"]}>
             <KeyboardAvoidingView
                 style={styles.container}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
             >
                 <ScrollView
                     style={styles.scrollView}
@@ -179,16 +235,19 @@ export default function EditRestaurantScreen() {
                 >
                     {/* Informations de base */}
                     <View style={styles.section}>
-                        <Text style={[styles.sectionTitle, {color: colors.text}]}>Informations générales</Text>
+                        <Text style={[styles.sectionTitle, { color: colors.text }]}>Informations générales</Text>
 
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, {color: colors.text}]}>Nom du restaurant *</Text>
+                            <Text style={[styles.label, { color: colors.text }]}>Nom du restaurant *</Text>
                             <TextInput
-                                style={[styles.input, {
-                                    backgroundColor: colors.surface,
-                                    color: colors.text,
-                                    borderColor: colors.border
-                                }]}
+                                style={[
+                                    styles.input,
+                                    {
+                                        backgroundColor: colors.surface,
+                                        color: colors.text,
+                                        borderColor: colors.border,
+                                    },
+                                ]}
                                 value={name}
                                 onChangeText={setName}
                                 placeholder="Ex: Le Bistrot Étudiant"
@@ -197,13 +256,16 @@ export default function EditRestaurantScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, {color: colors.text}]}>Adresse *</Text>
+                            <Text style={[styles.label, { color: colors.text }]}>Adresse *</Text>
                             <TextInput
-                                style={[styles.input, {
-                                    backgroundColor: colors.surface,
-                                    color: colors.text,
-                                    borderColor: colors.border
-                                }]}
+                                style={[
+                                    styles.input,
+                                    {
+                                        backgroundColor: colors.surface,
+                                        color: colors.text,
+                                        borderColor: colors.border,
+                                    },
+                                ]}
                                 value={address}
                                 onChangeText={setAddress}
                                 placeholder="Ex: 12 Rue de la République"
@@ -212,13 +274,16 @@ export default function EditRestaurantScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, {color: colors.text}]}>Ville *</Text>
+                            <Text style={[styles.label, { color: colors.text }]}>Ville *</Text>
                             <TextInput
-                                style={[styles.input, {
-                                    backgroundColor: colors.surface,
-                                    color: colors.text,
-                                    borderColor: colors.border
-                                }]}
+                                style={[
+                                    styles.input,
+                                    {
+                                        backgroundColor: colors.surface,
+                                        color: colors.text,
+                                        borderColor: colors.border,
+                                    },
+                                ]}
                                 value={city}
                                 onChangeText={setCity}
                                 placeholder="Ex: Paris"
@@ -227,13 +292,16 @@ export default function EditRestaurantScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, {color: colors.text}]}>Téléphone</Text>
+                            <Text style={[styles.label, { color: colors.text }]}>Téléphone</Text>
                             <TextInput
-                                style={[styles.input, {
-                                    backgroundColor: colors.surface,
-                                    color: colors.text,
-                                    borderColor: colors.border
-                                }]}
+                                style={[
+                                    styles.input,
+                                    {
+                                        backgroundColor: colors.surface,
+                                        color: colors.text,
+                                        borderColor: colors.border,
+                                    },
+                                ]}
                                 value={phone}
                                 onChangeText={setPhone}
                                 placeholder="Ex: 01 23 45 67 89"
@@ -243,13 +311,16 @@ export default function EditRestaurantScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, {color: colors.text}]}>Horaires d'ouverture</Text>
+                            <Text style={[styles.label, { color: colors.text }]}>Horaires d'ouverture</Text>
                             <TextInput
-                                style={[styles.input, {
-                                    backgroundColor: colors.surface,
-                                    color: colors.text,
-                                    borderColor: colors.border
-                                }]}
+                                style={[
+                                    styles.input,
+                                    {
+                                        backgroundColor: colors.surface,
+                                        color: colors.text,
+                                        borderColor: colors.border,
+                                    },
+                                ]}
                                 value={openingHours}
                                 onChangeText={setOpeningHours}
                                 placeholder="Ex: Lun-Ven 11h-15h, 18h-22h"
@@ -258,30 +329,49 @@ export default function EditRestaurantScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, {color: colors.text}]}>Image URL</Text>
-                            <TextInput
-                                style={[styles.input, {
-                                    backgroundColor: colors.surface,
-                                    color: colors.text,
-                                    borderColor: colors.border
-                                }]}
-                                value={image}
-                                onChangeText={setImage}
-                                placeholder="https://exemple.com/image.jpg"
-                                placeholderTextColor={colors.textSecondary}
-                                keyboardType="url"
-                                autoCapitalize="none"
-                            />
+                            <Text style={[styles.label, { color: colors.text }]}>Image du restaurant</Text>
+
+                            <TouchableOpacity
+                                style={[styles.imagePickerContainer, { borderColor: colors.border }]}
+                                onPress={pickImage}
+                                disabled={uploading}
+                            >
+                                {image ? (
+                                    <Image source={{ uri: image }} style={styles.imagePreview} />
+                                ) : (
+                                    <View style={[styles.imagePlaceholder, { backgroundColor: colors.surface }]}>
+                                        <Ionicons name="image-outline" size={48} color={colors.textSecondary} />
+                                        <Text style={[styles.imagePlaceholderText, { color: colors.textSecondary }]}>
+                                            Choisir une image
+                                        </Text>
+                                    </View>
+                                )}
+                                {uploading && (
+                                    <View style={styles.uploadingOverlay}>
+                                        <ActivityIndicator size="large" color="#FFFFFF" />
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+
+                            <TouchableOpacity onPress={pickImage} disabled={uploading} style={styles.changeImageButton}>
+                                <Ionicons name="camera-outline" size={20} color={colors.primary} />
+                                <Text style={[styles.changeImageText, { color: colors.primary }]}>
+                                    {uploading ? "Upload en cours..." : image ? "Changer la photo" : "Ajouter une photo"}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, {color: colors.text}]}>Description</Text>
+                            <Text style={[styles.label, { color: colors.text }]}>Description</Text>
                             <TextInput
-                                style={[styles.textArea, {
-                                    backgroundColor: colors.surface,
-                                    color: colors.text,
-                                    borderColor: colors.border
-                                }]}
+                                style={[
+                                    styles.textArea,
+                                    {
+                                        backgroundColor: colors.surface,
+                                        color: colors.text,
+                                        borderColor: colors.border,
+                                    },
+                                ]}
                                 value={description}
                                 onChangeText={setDescription}
                                 placeholder="Décris ton restaurant..."
@@ -297,20 +387,17 @@ export default function EditRestaurantScreen() {
                     <View style={styles.section}>
                         <View style={styles.sectionHeader}>
                             <View style={styles.menuTitleRow}>
-                                <Ionicons name="school" size={20} color={colors.primary}/>
-                                <Text style={[styles.sectionTitle, {color: colors.text}]}>Menus Étudiants</Text>
+                                <Ionicons name="school" size={20} color={colors.primary} />
+                                <Text style={[styles.sectionTitle, { color: colors.text }]}>Menus Étudiants</Text>
                             </View>
-                            <TouchableOpacity
-                                onPress={handleAddMenu}
-                                style={[styles.addButton, {backgroundColor: colors.primary}]}
-                            >
-                                <Ionicons name="add" size={20} color="#FFFFFF"/>
+                            <TouchableOpacity onPress={handleAddMenu} style={[styles.addButton, { backgroundColor: colors.primary }]}>
+                                <Ionicons name="add" size={20} color="#FFFFFF" />
                                 <Text style={styles.addButtonText}>Ajouter</Text>
                             </TouchableOpacity>
                         </View>
 
                         {studentMenus.length === 0 && (
-                            <Text style={[styles.emptyMenuText, {color: colors.textSecondary}]}>
+                            <Text style={[styles.emptyMenuText, { color: colors.textSecondary }]}>
                                 Aucun menu étudiant. Clique sur "Ajouter" pour en créer un.
                             </Text>
                         )}
@@ -318,40 +405,46 @@ export default function EditRestaurantScreen() {
                         {studentMenus.map((menu, index) => (
                             <View
                                 key={index}
-                                style={[styles.menuCard, {backgroundColor: colors.surface, borderColor: colors.border}]}
+                                style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
                             >
                                 <View style={styles.menuCardHeader}>
-                                    <Text style={[styles.menuCardTitle, {color: colors.text}]}>Menu {index + 1}</Text>
+                                    <Text style={[styles.menuCardTitle, { color: colors.text }]}>Menu {index + 1}</Text>
                                     <TouchableOpacity onPress={() => handleRemoveMenu(index)}>
-                                        <Ionicons name="trash-outline" size={20} color="#EF4444"/>
+                                        <Ionicons name="trash-outline" size={20} color="#EF4444" />
                                     </TouchableOpacity>
                                 </View>
 
                                 <View style={styles.inputGroup}>
-                                    <Text style={[styles.label, {color: colors.text}]}>Titre du menu</Text>
+                                    <Text style={[styles.label, { color: colors.text }]}>Titre du menu</Text>
                                     <TextInput
-                                        style={[styles.input, {
-                                            backgroundColor: colors.background,
-                                            color: colors.text,
-                                            borderColor: colors.border
-                                        }]}
+                                        style={[
+                                            styles.input,
+                                            {
+                                                backgroundColor: colors.background,
+                                                color: colors.text,
+                                                borderColor: colors.border,
+                                            },
+                                        ]}
                                         value={menu.title}
-                                        onChangeText={(value) => handleMenuChange(index, 'title', value)}
+                                        onChangeText={(value) => handleMenuChange(index, "title", value)}
                                         placeholder="Ex: Plat + Boisson + Dessert"
                                         placeholderTextColor={colors.textSecondary}
                                     />
                                 </View>
 
                                 <View style={styles.inputGroup}>
-                                    <Text style={[styles.label, {color: colors.text}]}>Prix</Text>
+                                    <Text style={[styles.label, { color: colors.text }]}>Prix</Text>
                                     <TextInput
-                                        style={[styles.input, {
-                                            backgroundColor: colors.background,
-                                            color: colors.text,
-                                            borderColor: colors.border
-                                        }]}
+                                        style={[
+                                            styles.input,
+                                            {
+                                                backgroundColor: colors.background,
+                                                color: colors.text,
+                                                borderColor: colors.border,
+                                            },
+                                        ]}
                                         value={menu.price}
-                                        onChangeText={(value) => handleMenuChange(index, 'price', value)}
+                                        onChangeText={(value) => handleMenuChange(index, "price", value)}
                                         placeholder="Ex: 8,50€"
                                         placeholderTextColor={colors.textSecondary}
                                     />
@@ -362,7 +455,7 @@ export default function EditRestaurantScreen() {
 
                     {/* Bouton de sauvegarde */}
                     <Button
-                        title={saving ? 'Sauvegarde en cours...' : 'Enregistrer les modifications'}
+                        title={saving ? "Sauvegarde en cours..." : "Enregistrer les modifications"}
                         onPress={handleSave}
                         disabled={saving}
                         style={styles.saveButton}
@@ -379,8 +472,8 @@ const styles = StyleSheet.create({
     },
     loading: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+        justifyContent: "center",
+        alignItems: "center",
     },
     scrollView: {
         flex: 1,
@@ -393,26 +486,26 @@ const styles = StyleSheet.create({
         marginBottom: 32,
     },
     sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
         marginBottom: 16,
     },
     menuTitleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection: "row",
+        alignItems: "center",
         gap: 8,
     },
     sectionTitle: {
         fontSize: 20,
-        fontWeight: '700',
+        fontWeight: "700",
     },
     inputGroup: {
         marginBottom: 16,
     },
     label: {
         fontSize: 14,
-        fontWeight: '600',
+        fontWeight: "600",
         marginBottom: 8,
     },
     input: {
@@ -431,22 +524,22 @@ const styles = StyleSheet.create({
         minHeight: 100,
     },
     addButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection: "row",
+        alignItems: "center",
         gap: 6,
         paddingHorizontal: 12,
         paddingVertical: 8,
         borderRadius: 8,
     },
     addButtonText: {
-        color: '#FFFFFF',
+        color: "#FFFFFF",
         fontSize: 14,
-        fontWeight: '600',
+        fontWeight: "600",
     },
     emptyMenuText: {
         fontSize: 14,
-        fontStyle: 'italic',
-        textAlign: 'center',
+        fontStyle: "italic",
+        textAlign: "center",
         marginVertical: 20,
     },
     menuCard: {
@@ -456,16 +549,56 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     menuCardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
         marginBottom: 12,
     },
     menuCardTitle: {
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: "600",
     },
     saveButton: {
         marginTop: 8,
+    },
+    imagePickerContainer: {
+        width: "100%",
+        height: 200,
+        borderRadius: 12,
+        overflow: "hidden",
+        borderWidth: 2,
+        borderStyle: "dashed",
+        marginBottom: 12,
+    },
+    imagePreview: {
+        width: "100%",
+        height: "100%",
+        resizeMode: "cover",
+    },
+    imagePlaceholder: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    imagePlaceholderText: {
+        marginTop: 12,
+        fontSize: 16,
+    },
+    uploadingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    changeImageButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        marginBottom: 12,
+        gap: 8,
+    },
+    changeImageText: {
+        fontSize: 14,
+        fontWeight: "600",
     },
 })

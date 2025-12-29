@@ -45,8 +45,6 @@ export default function MyRestaurantsScreen() {
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
             <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.content}>
-                    <Text style={[styles.title, { color: colors.text }]}>Mes restaurants</Text>
-
                     {restaurants.length === 0 ? (
                         <View style={styles.emptyContainer}>
                             <Ionicons name="restaurant-outline" size={64} color={colors.textSecondary} />
@@ -119,11 +117,6 @@ const styles = StyleSheet.create({
     },
     content: {
         padding: 20,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: "700",
-        marginBottom: 24,
     },
     card: {
         borderRadius: 16,
