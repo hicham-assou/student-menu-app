@@ -1,3 +1,5 @@
+"use client"
+
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
@@ -137,12 +139,7 @@ export default function ProfileScreen() {
                         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>À PROPOS</Text>
 
                         <TouchableOpacity
-                            onPress={() =>
-                                Alert.alert(
-                                    "Mentions légales",
-                                    "StudentFood\n\nÉditeur: [Nom de votre entreprise]\nSiège social: [Adresse]\n\nContact: contact@studentfood.com",
-                                )
-                            }
+                            onPress={() => router.push("/legal/mentions")}
                             style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
                         >
                             <View style={styles.menuItemLeft}>
@@ -155,12 +152,7 @@ export default function ProfileScreen() {
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                            onPress={() =>
-                                Alert.alert(
-                                    "Conditions d'utilisation",
-                                    "En utilisant StudentFood, vous acceptez nos conditions d'utilisation.\n\nDernière mise à jour: Décembre 2024",
-                                )
-                            }
+                            onPress={() => router.push("/legal/terms")}
                             style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
                         >
                             <View style={styles.menuItemLeft}>
@@ -173,12 +165,7 @@ export default function ProfileScreen() {
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                            onPress={() =>
-                                Alert.alert(
-                                    "Politique de confidentialité",
-                                    "Vos données personnelles sont protégées et ne sont jamais partagées avec des tiers.\n\nPour plus d'informations: privacy@studentfood.com",
-                                )
-                            }
+                            onPress={() => router.push("/legal/privacy")}
                             style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
                         >
                             <View style={styles.menuItemLeft}>
@@ -191,12 +178,7 @@ export default function ProfileScreen() {
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                            onPress={() =>
-                                Alert.alert(
-                                    "Aide & Support",
-                                    "Besoin d'aide ?\n\nEmail: support@studentfood.com\n\nDisponible du lundi au vendredi de 9h à 18h",
-                                )
-                            }
+                            onPress={() => router.push("/legal/help")}
                             style={[styles.menuItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
                         >
                             <View style={styles.menuItemLeft}>
