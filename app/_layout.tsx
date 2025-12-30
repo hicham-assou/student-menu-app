@@ -22,10 +22,12 @@ export default function RootLayout() {
                         title: 'Inscription',
                     }}
                 />
-                <Stack.Screen name="restaurant/[id]" options={{headerShown: false}}/>
+                <Stack.Screen name="restaurant/[id]" options={{title: "Restaurant"}}/>
                 <Stack.Screen name="owner/restaurants" options={{title: "Mes Restaurants"}}/>
                 <Stack.Screen name="owner/stats/[id]" options={{title: "Statistiques"}}/>
                 <Stack.Screen name="owner/edit/[id]" options={{title: "Modifier le restaurant"}}/>
+                <Stack.Screen name="profile/reviews" options={{title: "Mes avis"}}/>
+                <Stack.Screen name="profile/notifications" options={{title: "Notifications"}}/>
             </Stack>
         </AuthProvider>
     )

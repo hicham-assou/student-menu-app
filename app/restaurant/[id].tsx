@@ -1,3 +1,5 @@
+"use client"
+
 import {
     Alert,
     Dimensions,
@@ -11,7 +13,7 @@ import {
     View,
 } from "react-native"
 import {SafeAreaView} from "react-native-safe-area-context"
-import {useLocalSearchParams, useRouter} from "expo-router"
+import {useLocalSearchParams, useNavigation, useRouter} from "expo-router"
 import {Ionicons} from "@expo/vector-icons"
 import {useCallback, useEffect, useState} from "react"
 import {useColorScheme} from "@/components/useColorScheme.web"
@@ -36,6 +38,7 @@ export default function RestaurantDetailScreen() {
     const colors = Colors[colorScheme]
     const {id} = useLocalSearchParams<{ id: string }>()
     const router = useRouter()
+    const navigation = useNavigation()
     const {user} = useAuth()
 
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
@@ -118,7 +121,14 @@ export default function RestaurantDetailScreen() {
         loadData()
     }, [loadData])
 
-    // Tracking automatique des vues de restaurant
+    useEffect(() => {
+        if (restaurant) {
+            navigation.setOptions({
+                title: restaurant.name,
+            })
+        }
+    }, [restaurant, navigation])
+
     useEffect(() => {
         if (id) {
             trackEvent(id, "view")
@@ -206,10 +216,6 @@ export default function RestaurantDetailScreen() {
                         style={styles.image}
                         resizeMode="cover"
                     />
-
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color="#FFFFFF"/>
-                    </TouchableOpacity>
 
                     <TouchableOpacity onPress={handleToggleFavorite} style={styles.favoriteButton}>
                         <Ionicons name={isFav ? "heart" : "heart-outline"} size={24}
@@ -447,14 +453,6 @@ const styles = StyleSheet.create({
     image: {
         width: "100%",
         height: 250,
-    },
-    backButton: {
-        position: "absolute",
-        top: 50,
-        left: 16,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        borderRadius: 20,
-        padding: 8,
     },
     favoriteButton: {
         position: "absolute",
