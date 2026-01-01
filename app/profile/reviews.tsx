@@ -133,13 +133,6 @@ export default function MyReviewsScreen() {
     if (loading) {
         return (
             <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color={colors.text}/>
-                    </TouchableOpacity>
-                    <Text style={[styles.title, {color: colors.text}]}>Mes avis</Text>
-                    <View style={{width: 40}}/>
-                </View>
                 <View style={styles.emptyContainer}>
                     <Text style={[styles.emptyText, {color: colors.textSecondary}]}>Chargement...</Text>
                 </View>
@@ -149,13 +142,6 @@ export default function MyReviewsScreen() {
 
     return (
         <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={colors.text}/>
-                </TouchableOpacity>
-                <Text style={[styles.title, {color: colors.text}]}>Mes avis</Text>
-                <View style={{width: 40}}/>
-            </View>
 
             {reviews.length === 0 ? (
                 <View style={styles.emptyContainer}>
@@ -181,19 +167,6 @@ export default function MyReviewsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    header: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        justifyContent: "center",
-        alignItems: "center",
     },
     title: {
         fontSize: 20,

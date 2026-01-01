@@ -6,6 +6,7 @@ import { Colors } from "@/constants/Colors"
 import { deleteReview } from "@/lib/reviews"
 import { useAuth } from "@/contexts/AuthContext"
 import { CustomAlertManager } from "@/components/CustomAlert"
+import {supabase} from "@/lib/supabase";
 
 interface ReviewCardProps {
     review: Review
@@ -21,22 +22,19 @@ export function ReviewCard({ review, onDeleted, onEdit }: ReviewCardProps) {
     const handleDelete = () => {
         CustomAlertManager.alert(
             "Supprimer l'avis",
-            "Êtes-vous sûr de vouloir supprimer cet avis ?",
-            [
-                { text: "Annuler", style: "cancel" },
-                {
-                    text: "Supprimer",
-                    style: "destructive",
-                    onPress: async () => {
-                        const success = await deleteReview(review.id)
-                        if (success && onDeleted) {
-                            onDeleted()
-                        }
-                    },
+            "Es-tu sûr de vouloir supprimer cet avis ?", "confirm", [
+            {text: "Annuler", style: "cancel"},
+            {
+                text: "Supprimer",
+                style: "destructive",
+                onPress: async () => {
+                    const success = await deleteReview(review.id)
+                    if (success && onDeleted) {
+                        onDeleted()
+                    }
                 },
-            ],
-            "confirm",
-        )
+            },
+        ])
     }
 
     const formatDate = (dateString: string) => {
