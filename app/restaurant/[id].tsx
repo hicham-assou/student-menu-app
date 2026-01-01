@@ -27,6 +27,7 @@ import {ReviewCard} from "@/components/reviews/ReviewCard"
 import {AuthModal} from "@/components/ui/AutoModal"
 import {CustomAlertManager} from "@/components/CustomAlert"
 import type {Restaurant, Review} from "@/types"
+import {KeyboardAwareScrollView} from "react-native-keyboard-aware-scroll-view";
 
 const {width} = Dimensions.get("window")
 const MENU_CARD_WIDTH = width * 0.85
@@ -191,8 +192,11 @@ export default function RestaurantDetailScreen() {
     const displayedReviews = showAllReviews ? reviews : reviews.slice(0, 3)
 
     return (
-        <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]} edges={["bottom"]}>
-            <ScrollView
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["bottom"]}>
+            <KeyboardAwareScrollView
+                enableOnAndroid
+                keyboardShouldPersistTaps="handled"
+                extraScrollHeight={140}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl
@@ -428,7 +432,7 @@ export default function RestaurantDetailScreen() {
                         )}
                     </View>
                 </View>
-            </ScrollView>
+            </KeyboardAwareScrollView>
 
             <AuthModal
                 visible={showAuthModal}

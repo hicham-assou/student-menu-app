@@ -1,10 +1,18 @@
-import {StyleSheet, Text, TextInput, TouchableOpacity, View} from "react-native"
-import {Ionicons} from "@expo/vector-icons"
-import {useState} from "react"
-import {Colors} from "@/constants/Colors"
-import {Button} from "@/components/ui/Button"
-import {upsertReview} from "@/lib/reviews"
-import type {Review} from "@/types"
+import {
+    Alert,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import { useState } from 'react'
+import { useColorScheme } from '@/components/useColorScheme.web'
+import { Colors } from '@/constants/Colors'
+import { Button } from '@/components/ui/Button'
+import { upsertReview } from '@/lib/reviews'
+import type { Review } from '@/types'
 import {CustomAlertManager} from "@/components/CustomAlert";
 
 interface ReviewFormProps {
@@ -14,7 +22,12 @@ interface ReviewFormProps {
     onCancel?: () => void
 }
 
-export function ReviewForm({restaurantId, existingReview, onSuccess, onCancel}: ReviewFormProps) {
+export function ReviewForm({
+                               restaurantId,
+                               existingReview,
+                               onSuccess,
+                               onCancel,
+                           }: ReviewFormProps) {
     const colors = Colors.light
 
     const [rating, setRating] = useState(existingReview?.rating || 0)
@@ -49,41 +62,52 @@ export function ReviewForm({restaurantId, existingReview, onSuccess, onCancel}: 
     }
 
     return (
-        <View style={[styles.container, {backgroundColor: colors.surface, borderColor: colors.border}]}>
-            <Text style={[styles.title, {color: colors.text}]}>
+        <View
+            style={[
+                styles.container,
+                {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                },
+            ]}
+        >
+            <Text style={[styles.title, { color: colors.text }]}>
                 {existingReview ? "Modifier mon avis" : "Laisser un avis"}
             </Text>
 
-            {/* Étoiles */}
+            {/* ⭐ Note */}
             <View style={styles.starsContainer}>
-                <Text style={[styles.label, {color: colors.text}]}>Note</Text>
+                <Text style={[styles.label, { color: colors.text }]}>Note</Text>
                 <View style={styles.stars}>
                     {[1, 2, 3, 4, 5].map((star) => (
                         <TouchableOpacity
                             key={star}
                             onPress={() => setRating(star)}
-                            hitSlop={{top: 10, bottom: 10, left: 5, right: 5}}
+                            hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
                         >
                             <Ionicons
                                 name={star <= rating ? "star" : "star-outline"}
                                 size={32}
-                                color={star <= rating ? "#F59E0B" : colors.textSecondary}
+                                color={
+                                    star <= rating
+                                        ? "#F59E0B"
+                                        : colors.textSecondary
+                                }
                             />
                         </TouchableOpacity>
                     ))}
                 </View>
             </View>
 
-            {/* Commentaire */}
+            {/* 💬 Commentaire */}
             <View style={styles.commentContainer}>
-                <Text style={[styles.label, {color: colors.text}]}>Commentaire (optionnel)</Text>
+                <Text style={[styles.label, { color: colors.text }]}>Commentaire (optionnel)</Text>
                 <TextInput
-                    placeholder="Partage ton experience..."
+                    placeholder="Partage ton expérience..."
                     placeholderTextColor={colors.textSecondary}
                     value={comment}
                     onChangeText={setComment}
                     multiline
-                    numberOfLines={4}
                     style={[
                         styles.textInput,
                         {
@@ -95,11 +119,11 @@ export function ReviewForm({restaurantId, existingReview, onSuccess, onCancel}: 
                 />
             </View>
 
-            {/* Boutons */}
+            {/* 🔘 Boutons */}
             <View style={styles.buttons}>
                 {onCancel && <Button title="Annuler" onPress={onCancel} variant="secondary" style={styles.button}/>}
                 <Button
-                    title={existingReview ? "Mettre a jour" : "Publier"}
+                    title={existingReview ? "Mettre à jour" : "Publier"}
                     onPress={handleSubmit}
                     loading={loading}
                     style={styles.button}
@@ -114,7 +138,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         borderWidth: 1,
         padding: 16,
-        marginBottom: 16,
+        marginBottom: 24,
     },
     title: {
         fontSize: 18,
@@ -134,7 +158,7 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     commentContainer: {
-        marginBottom: 16,
+        marginBottom: 20,
     },
     textInput: {
         borderWidth: 1,

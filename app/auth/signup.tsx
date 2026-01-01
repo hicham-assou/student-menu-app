@@ -1,14 +1,20 @@
-"use client"
-
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native"
-import { SafeAreaView } from "react-native-safe-area-context"
-import { useState } from "react"
-import { useRouter } from "expo-router"
-import { Colors } from "@/constants/Colors"
-import { useAuth } from "@/contexts/AuthContext"
-import { Input } from "@/components/ui/Input"
-import { Button } from "@/components/ui/Button"
+import {
+    Alert,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
+import { useState } from 'react'
+import { useRouter } from 'expo-router'
+import { useColorScheme } from "@/components/useColorScheme.web"
+import { Colors } from '@/constants/Colors'
+import { useAuth } from '@/contexts/AuthContext'
+import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 import { CustomAlertManager} from "@/components/CustomAlert";
+
 
 export default function SignupScreen() {
     const colors = Colors.light
@@ -52,7 +58,13 @@ export default function SignupScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.content}>
+            <KeyboardAwareScrollView
+                enableOnAndroid
+                keyboardShouldPersistTaps="handled"
+                extraScrollHeight={140}
+                contentContainerStyle={styles.content}
+                showsVerticalScrollIndicator={false}
+            >
                 <View style={styles.header}>
                     <Text style={[styles.title, { color: colors.text }]}>Inscription</Text>
                     <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
@@ -110,7 +122,7 @@ export default function SignupScreen() {
                         />
                     </View>
                 </View>
-            </KeyboardAvoidingView>
+            </KeyboardAwareScrollView>
         </SafeAreaView>
     )
 }
@@ -120,7 +132,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     content: {
-        flex: 1,
+        flexGrow: 1,
         padding: 20,
     },
     header: {
