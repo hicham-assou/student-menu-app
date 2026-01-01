@@ -70,7 +70,7 @@ export default function MapScreen() {
             setRestaurants(data)
         } catch (error) {
             console.error("Error loading restaurants:", error)
-            CustomAlertManager.alert("Erreur", "Impossible de charger les restaurants", undefined, "error")
+            CustomAlertManager.alert("Erreur", "Impossible de charger les restaurants", "error")
         } finally {
             setLoading(false)
         }
@@ -105,11 +105,11 @@ export default function MapScreen() {
             CustomAlertManager.alert(
                 "Localisation désactivée",
                 "Autorise la localisation pour centrer la carte sur ta position",
+                "warning",
                 [
                     {text: "Annuler", style: "cancel"},
                     {text: "Activer", onPress: requestLocationPermission},
                 ],
-                "warning",
             )
             return
         }
@@ -125,7 +125,7 @@ export default function MapScreen() {
             setUserLocation(newRegion)
             mapRef.current?.animateToRegion(newRegion)
         } catch (error) {
-            CustomAlertManager.alert("Erreur", "Impossible de récupérer ta position", undefined, "error")
+            CustomAlertManager.alert("Erreur", "Impossible de récupérer ta position", "error")
         }
     }
 

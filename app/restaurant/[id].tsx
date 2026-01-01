@@ -146,7 +146,7 @@ export default function RestaurantDetailScreen() {
             setIsFav(newFavState)
             await trackEvent(id, newFavState ? "favorite" : "unfavorite")
         } catch (error) {
-            CustomAlertManager.alert("Erreur", "Impossible de modifier le favori", undefined, "error")
+            CustomAlertManager.alert("Erreur", "Impossible de modifier le favori", "error")
         }
     }
 

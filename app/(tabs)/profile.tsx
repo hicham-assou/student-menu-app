@@ -1,5 +1,3 @@
-"use client"
-
 import {Image, ScrollView, StyleSheet, Text, TouchableOpacity, View} from "react-native"
 import {SafeAreaView} from "react-native-safe-area-context"
 import {useRouter} from "expo-router"
@@ -24,7 +22,7 @@ export default function ProfileScreen() {
             const {status} = await ImagePicker.requestMediaLibraryPermissionsAsync()
 
             if (status !== "granted") {
-                CustomAlertManager.alert("Permission refusée", "Nous avons besoin d'accéder à ta galerie", undefined, "warning")
+                CustomAlertManager.alert("Permission refusée", "Nous avons besoin d'accéder à ta galerie", "warning")
                 return
             }
 
@@ -70,13 +68,13 @@ export default function ProfileScreen() {
 
                 if (updateError) throw updateError
 
-                CustomAlertManager.alert("Succès", "Ta photo de profil a été mise à jour", undefined, "success")
+                CustomAlertManager.alert("Succès", "Ta photo de profil a été mise à jour", "success")
                 // Recharger le profil
                 window.location.reload()
             }
         } catch (error) {
             console.error("Error uploading avatar:", error)
-            CustomAlertManager.alert("Erreur", "Impossible d'uploader la photo", undefined, "error")
+            CustomAlertManager.alert("Erreur", "Impossible d'uploader la photo", "error")
         } finally {
             setUploading(false)
         }
@@ -195,9 +193,9 @@ export default function ProfileScreen() {
 
                     {/* Paramètres */}
                     <View style={styles.section}>
-                        {/*<Text style={[styles.sectionTitle, {color: Colors.light.textSecondary}]}>PARAMÈTRES</Text>
+                        {/*<Text style={[styles.sectionTitle, { color: Colors.light.textSecondary }]}>PARAMÈTRES</Text>
 
-                         <TouchableOpacity
+                        <TouchableOpacity
               onPress={() => router.push("/profile/notifications")}
               style={[styles.menuItem, { backgroundColor: Colors.light.surface, borderColor: Colors.light.border }]}
             >
