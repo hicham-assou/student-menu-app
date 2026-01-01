@@ -1,29 +1,18 @@
-import {ActivityIndicator, StyleSheet, Text, TouchableOpacity, ViewStyle} from 'react-native'
-import {useColorScheme} from "@/components/useColorScheme.web";
-import {Colors} from '@/constants/Colors'
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, type ViewStyle } from "react-native"
+import { Colors } from "@/constants/Colors"
 
 interface ButtonProps {
     title: string
     onPress: () => void
-    variant?: 'primary' | 'secondary' | 'outline'
+    variant?: "primary" | "secondary"
     loading?: boolean
     disabled?: boolean
     style?: ViewStyle
 }
 
-export function Button({
-                           title,
-                           onPress,
-                           variant = 'primary',
-                           loading = false,
-                           disabled = false,
-                           style,
-                       }: ButtonProps) {
-    const colorScheme = useColorScheme() ?? 'light'
-    const colors = Colors[colorScheme]
-
-    const isPrimary = variant === 'primary'
-    const isOutline = variant === 'outline'
+export function Button({ title, onPress, variant = "primary", loading = false, disabled = false, style }: ButtonProps) {
+    const colors = Colors.light
+    const isPrimary = variant === "primary"
 
     return (
         <TouchableOpacity
@@ -32,23 +21,22 @@ export function Button({
             style={[
                 styles.button,
                 {
-                    backgroundColor: isPrimary ? colors.primary : isOutline ? 'transparent' : colors.surface,
-                    borderColor: isOutline ? colors.primary : 'transparent',
-                    borderWidth: isOutline ? 1.5 : 0,
-                    opacity: disabled ? 0.5 : 1,
+                    backgroundColor: isPrimary ? colors.primary : colors.surface,
+                    borderColor: colors.border,
                 },
+                (disabled || loading) && styles.disabled,
                 style,
             ]}
             activeOpacity={0.7}
         >
             {loading ? (
-                <ActivityIndicator color={isPrimary ? '#FFFFFF' : colors.primary} />
+                <ActivityIndicator color={isPrimary ? "#FFFFFF" : colors.primary} />
             ) : (
                 <Text
                     style={[
                         styles.text,
                         {
-                            color: isPrimary ? '#FFFFFF' : colors.primary,
+                            color: isPrimary ? "#FFFFFF" : colors.text,
                         },
                     ]}
                 >
@@ -61,14 +49,19 @@ export function Button({
 
 const styles = StyleSheet.create({
     button: {
-        paddingVertical: 14,
+        paddingVertical: 12,
         paddingHorizontal: 24,
         borderRadius: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
+        borderWidth: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: 48,
+    },
+    disabled: {
+        opacity: 0.5,
     },
     text: {
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: "600",
     },
 })

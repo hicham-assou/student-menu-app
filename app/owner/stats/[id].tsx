@@ -1,5 +1,3 @@
-"use client"
-
 import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useLocalSearchParams } from "expo-router"
@@ -10,10 +8,117 @@ import { Colors } from "@/constants/Colors"
 import { getRestaurantStats, type RestaurantStats, type TimePeriod } from "@/lib/analytics"
 import type { Restaurant } from "@/types"
 import { getRestaurants } from "@/lib/api"
-import { LineChart} from "react-native-chart-kit";
+import { LineChart } from "react-native-chart-kit"
+import React from "react"
 
 const { width } = Dimensions.get("window")
 const CARD_WIDTH = (width - 48) / 2
+
+const aggregateChartData = (dailyStats: Array<{ date: string; views: number }>, period: TimePeriod) => {
+    if (dailyStats.length === 0) return { labels: [], data: [], fullDates: [], chartWidth: width - 80 }
+
+    let aggregated: Array<{ label: string; value: number; fullDate: string }> = []
+    const labelFormat = ""
+    let chartWidth = width - 80
+
+    if (period === "7days") {
+        // 7 jours : Afficher chaque jour
+        aggregated = dailyStats.map((d) => {
+            const date = new Date(d.date)
+            return {
+                label: `${date.getDate()}/${date.getMonth() + 1}`,
+                value: d.views,
+                fullDate: date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }),
+            }
+        })
+        chartWidth = width - 80
+    } else if (period === "30days") {
+        // 30 jours : Grouper par tranches de 3 jours
+        const groupSize = 3
+        for (let i = 0; i < dailyStats.length; i += groupSize) {
+            const group = dailyStats.slice(i, i + groupSize)
+            const totalViews = group.reduce((sum, d) => sum + d.views, 0)
+            const firstDate = new Date(group[0].date)
+            aggregated.push({
+                label: `${firstDate.getDate()}/${firstDate.getMonth() + 1}`,
+                value: Math.round(totalViews / group.length),
+                fullDate: `${firstDate.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} - ${new Date(
+                    group[group.length - 1].date,
+                ).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`,
+            })
+        }
+        chartWidth = width * 1.2
+    } else if (period === "90days") {
+        // 3 mois : Grouper par semaine
+        const groupSize = 7
+        for (let i = 0; i < dailyStats.length; i += groupSize) {
+            const group = dailyStats.slice(i, i + groupSize)
+            const totalViews = group.reduce((sum, d) => sum + d.views, 0)
+            const firstDate = new Date(group[0].date)
+            aggregated.push({
+                label: `S${Math.ceil((i + 1) / 7)}`,
+                value: Math.round(totalViews / group.length),
+                fullDate: `Semaine du ${firstDate.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`,
+            })
+        }
+        chartWidth = width * 1.5
+    } else {
+        // 1 an : Grouper par mois
+        const monthlyData: { [key: string]: { sum: number; count: number; month: string } } = {}
+
+        dailyStats.forEach((d) => {
+            const date = new Date(d.date)
+            const monthKey = `${date.getFullYear()}-${date.getMonth()}`
+            const monthLabel = date.toLocaleDateString("fr-FR", { month: "short" })
+
+            if (!monthlyData[monthKey]) {
+                monthlyData[monthKey] = { sum: 0, count: 0, month: monthLabel }
+            }
+            monthlyData[monthKey].sum += d.views
+            monthlyData[monthKey].count++
+        })
+
+        aggregated = Object.entries(monthlyData).map(([key, data]) => ({
+            label: data.month.charAt(0).toUpperCase() + data.month.slice(1, 3),
+            value: Math.round(data.sum / data.count),
+            fullDate: data.month.charAt(0).toUpperCase() + data.month.slice(1),
+        }))
+        chartWidth = width * 1.8
+    }
+
+    return {
+        labels: aggregated.map((d) => d.label),
+        data: aggregated.map((d) => d.value),
+        fullDates: aggregated.map((d) => d.fullDate),
+        chartWidth,
+    }
+}
+
+const InfoTooltip = ({ text, colors }: { text: string; colors: any }) => {
+    const [visible, setVisible] = React.useState(false)
+
+    return (
+        <View style={{ marginLeft: 6 }}>
+            <TouchableOpacity onPress={() => setVisible(!visible)}>
+                <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+            {visible && (
+                <View
+                    style={[
+                        styles.tooltip,
+                        {
+                            backgroundColor: colors.surface,
+                            borderColor: colors.border,
+                            shadowColor: colors.text,
+                        },
+                    ]}
+                >
+                    <Text style={[styles.tooltipText, { color: colors.text }]}>{text}</Text>
+                </View>
+            )}
+        </View>
+    )
+}
 
 export default function RestaurantStatsScreen() {
     const colorScheme = useColorScheme() ?? "light"
@@ -24,6 +129,26 @@ export default function RestaurantStatsScreen() {
     const [stats, setStats] = useState<RestaurantStats | null>(null)
     const [loading, setLoading] = useState(true)
     const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("30days")
+    const [tooltipPos, setTooltipPos] = useState<{
+        visible: boolean
+        x: number
+        y: number
+        value: number
+        label: string
+    }>({
+        visible: false,
+        x: 0,
+        y: 0,
+        value: 0,
+        label: "",
+    })
+
+    const periods: Array<{ key: TimePeriod; label: string }> = [
+        { key: "7days", label: "7j" },
+        { key: "30days", label: "30j" },
+        { key: "90days", label: "3m" },
+        { key: "365days", label: "1an" },
+    ]
 
     useEffect(() => {
         loadData()
@@ -53,43 +178,24 @@ export default function RestaurantStatsScreen() {
                           value,
                           color,
                           subtitle,
-                          trend,
                       }: {
         icon: string
         label: string
         value: string | number
         color: string
         subtitle?: string
-        trend?: number
     }) => (
         <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.statHeader}>
                 <View style={[styles.statIconContainer, { backgroundColor: color }]}>
                     <Ionicons name={icon as any} size={28} color="#FFFFFF" />
                 </View>
-                {trend !== undefined && trend !== 0 && (
-                    <View style={[styles.trendBadge, { backgroundColor: trend > 0 ? "#10B98120" : "#EF444420" }]}>
-                        <Ionicons
-                            name={trend > 0 ? "arrow-up" : "arrow-down"}
-                            size={12}
-                            color={trend > 0 ? "#10B981" : "#EF4444"}
-                        />
-                        <Text style={[styles.trendText, { color: trend > 0 ? "#10B981" : "#EF4444" }]}>{Math.abs(trend)}%</Text>
-                    </View>
-                )}
             </View>
             <Text style={[styles.statValue, { color: colors.text }]}>{value}</Text>
             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{label}</Text>
             {subtitle && <Text style={[styles.statSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>}
         </View>
     )
-
-    const periods: Array<{ key: TimePeriod; label: string }> = [
-        { key: "7days", label: "7j" },
-        { key: "30days", label: "30j" },
-        { key: "90days", label: "3m" },
-        { key: "365days", label: "1an" },
-    ]
 
     if (loading || !restaurant || !stats) {
         return (
@@ -109,14 +215,15 @@ export default function RestaurantStatsScreen() {
             ? (((stats.totalDirections + stats.totalCalls + stats.totalFavorites) / stats.totalViews) * 100).toFixed(1)
             : "0"
 
+    const engagementExplanation = `Sur 100 étudiants qui voient ton restaurant, ${engagementRate} effectuent une action (itinéraire, appel ou ajout en favori)`
+
+    const { labels, data, fullDates, chartWidth } = aggregateChartData(stats.dailyStats, selectedPeriod)
+
     const chartData = {
-        labels: stats.dailyStats?.map((d) => {
-            const date = new Date(d.date)
-            return `${date.getDate()}/${date.getMonth() + 1}`
-        }),
+        labels,
         datasets: [
             {
-                data: stats.dailyStats?.map((d) => d.views),
+                data: data.length > 0 ? data : [0],
                 color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
                 strokeWidth: 3,
             },
@@ -130,13 +237,13 @@ export default function RestaurantStatsScreen() {
         decimalPlaces: 0,
         color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
         labelColor: (opacity = 1) =>
-            colorScheme === "dark" ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`,
+            colorScheme === "dark" ? `rgba(255, 255, 255, ${opacity * 0.7})` : `rgba(0, 0, 0, ${opacity * 0.7})`,
         style: {
             borderRadius: 16,
         },
         propsForDots: {
-            r: "6",
-            strokeWidth: "3",
+            r: "5",
+            strokeWidth: "2",
             stroke: "#3B82F6",
         },
         propsForBackgroundLines: {
@@ -194,39 +301,90 @@ export default function RestaurantStatsScreen() {
                                 <Ionicons name={growthIcon} size={32} color={growthColor} />
                             </View>
                             <View style={styles.growthInfo}>
-                                <Text style={[styles.growthLabel, { color: colors.textSecondary }]}>Croissance</Text>
+                                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                    <Text style={[styles.growthLabel, { color: colors.textSecondary }]}>Évolution des vues</Text>
+                                    <InfoTooltip
+                                        text={`Compare les vues de la période sélectionnée avec la période précédente équivalente`}
+                                        colors={colors}
+                                    />
+                                </View>
                                 <Text style={[styles.growthValue, { color: growthColor }]}>
                                     {stats.growthPercentage > 0 ? "+" : ""}
                                     {stats.growthPercentage.toFixed(1)}%
                                 </Text>
-                                <Text style={[styles.growthSubtext, { color: colors.textSecondary }]}>vs période précédente</Text>
+                                <Text style={[styles.growthSubtext, { color: colors.textSecondary }]}>
+                                    {stats.growthPercentage >= 0 ? "En progression" : "En baisse"}
+                                </Text>
                             </View>
                         </View>
                     </View>
 
                     {stats.dailyStats && stats.dailyStats.length > 0 && (
                         <View style={[styles.graphCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                            <Text style={[styles.graphTitle, { color: colors.text }]}>Évolution des vues</Text>
-                            <LineChart
-                                data={chartData}
-                                width={width - 80}
-                                height={220}
-                                chartConfig={chartConfig}
-                                bezier
-                                style={{
-                                    marginVertical: 8,
-                                    borderRadius: 16,
-                                }}
-                                withInnerLines={true}
-                                withOuterLines={true}
-                                withVerticalLines={true}
-                                withHorizontalLines={true}
-                                withVerticalLabels={true}
-                                withHorizontalLabels={true}
-                                withDots={true}
-                                withShadow={false}
-                                fromZero={true}
-                            />
+                            <View style={styles.graphHeader}>
+                                <Text style={[styles.graphTitle, { color: colors.text }]}>Évolution des vues</Text>
+                                <View style={[styles.periodBadge, { backgroundColor: `${colors.primary}20` }]}>
+                                    <Text style={[styles.periodBadgeText, { color: colors.primary }]}>
+                                        {periods.find((p) => p.key === selectedPeriod)?.label}
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={true}
+                                style={styles.chartScroll}
+                                contentContainerStyle={{ paddingRight: 40 }}
+                            >
+                                <LineChart
+                                    data={chartData}
+                                    width={chartWidth}
+                                    height={220}
+                                    chartConfig={chartConfig}
+                                    bezier
+                                    style={{
+                                        marginVertical: 8,
+                                        borderRadius: 16,
+                                    }}
+                                    withInnerLines={true}
+                                    withOuterLines={true}
+                                    withVerticalLines={false}
+                                    withHorizontalLines={true}
+                                    withVerticalLabels={true}
+                                    withHorizontalLabels={true}
+                                    withDots={true}
+                                    withShadow={false}
+                                    fromZero={true}
+                                    segments={4}
+                                    onDataPointClick={(data) => {
+                                        setTooltipPos({
+                                            visible: true,
+                                            x: data.x,
+                                            y: data.y,
+                                            value: data.value,
+                                            label: fullDates?.[data.index] || labels[data.index],
+                                        })
+                                        setTimeout(() => setTooltipPos((prev) => ({ ...prev, visible: false })), 3000)
+                                    }}
+                                />
+                            </ScrollView>
+
+                            {tooltipPos.visible && (
+                                <View style={[styles.tooltip, { backgroundColor: colors.primary }]}>
+                                    <Text style={styles.tooltipLabel}>{tooltipPos.label}</Text>
+                                    <Text style={styles.tooltipValue}>{tooltipPos.value} vues</Text>
+                                </View>
+                            )}
+
+                            <View style={styles.chartLegend}>
+                                <Ionicons name="information-circle" size={16} color={colors.textSecondary} />
+                                <Text style={[styles.chartLegendText, { color: colors.textSecondary }]}>
+                                    {selectedPeriod === "7days" && "Données journalières"}
+                                    {selectedPeriod === "30days" && "Moyenne sur 3 jours"}
+                                    {selectedPeriod === "90days" && "Moyenne hebdomadaire"}
+                                    {selectedPeriod === "365days" && "Moyenne mensuelle"}
+                                </Text>
+                            </View>
                         </View>
                     )}
 
@@ -237,16 +395,19 @@ export default function RestaurantStatsScreen() {
                                 <Text style={[styles.badgeText, { color: colors.primary }]}>En direct</Text>
                             </View>
                         </View>
-                        <View style={styles.statsGrid}>
-                            <StatCard
-                                icon="eye"
-                                label="Vues totales"
-                                value={stats.totalViews}
-                                color="#3B82F6"
-                                subtitle={`${stats.weeklyViews} cette semaine`}
-                                trend={12}
-                            />
-                            <StatCard icon="people" label="Étudiants uniques" value={stats.uniqueUsers} color="#8B5CF6" trend={8} />
+                        <View style={styles.statsRow}>
+                            <View style={styles.statCardWrapper}>
+                                <StatCard
+                                    icon="eye"
+                                    label="Vues totales"
+                                    value={stats.totalViews}
+                                    color="#3B82F6"
+                                    subtitle={`${stats.weeklyViews} cette semaine`}
+                                />
+                            </View>
+                            <View style={styles.statCardWrapper}>
+                                <StatCard icon="people" label="Étudiants uniques" value={stats.uniqueUsers} color="#8B5CF6" />
+                            </View>
                         </View>
                     </View>
 
@@ -255,11 +416,12 @@ export default function RestaurantStatsScreen() {
                     >
                         <View style={styles.engagementHeader}>
                             <Ionicons name="pulse" size={24} color={colors.primary} />
-                            <Text style={[styles.engagementTitle, { color: colors.text }]}>Taux d'engagement</Text>
+                            <Text style={[styles.engagementTitle, { color: colors.text }]}>Taux d'interaction</Text>
+                            <InfoTooltip text={engagementExplanation} colors={colors} />
                         </View>
                         <Text style={[styles.engagementValue, { color: colors.primary }]}>{engagementRate}%</Text>
                         <Text style={[styles.engagementSubtext, { color: colors.textSecondary }]}>
-                            Des visiteurs interagissent avec ton restaurant
+                            des visiteurs passent à l'action
                         </Text>
                     </View>
 
@@ -268,38 +430,39 @@ export default function RestaurantStatsScreen() {
                             <Text style={[styles.sectionTitle, { color: colors.text }]}>Actions des étudiants</Text>
                             <Ionicons name="flash" size={20} color={colors.primary} />
                         </View>
-                        <View style={styles.statsGrid}>
-                            <StatCard
-                                icon="navigate"
-                                label="Itinéraires"
-                                value={stats.totalDirections}
-                                color="#F97316"
-                                subtitle="Étudiants venus"
-                                trend={15}
-                            />
-                            <StatCard
-                                icon="call"
-                                label="Appels"
-                                value={stats.totalCalls}
-                                color="#10B981"
-                                subtitle="Réservations"
-                                trend={5}
-                            />
-                            <StatCard
-                                icon="heart"
-                                label="Favoris"
-                                value={stats.totalFavorites}
-                                color="#EF4444"
-                                subtitle="Clients fidèles"
-                                trend={20}
-                            />
-                            <StatCard
-                                icon="star"
-                                label="Note moyenne"
-                                value={stats.averageRating.toFixed(1)}
-                                color="#F59E0B"
-                                subtitle={`${stats.totalReviews} avis`}
-                            />
+                        <View style={styles.statsRow}>
+                            <View style={styles.statCardWrapper}>
+                                <StatCard
+                                    icon="navigate"
+                                    label="Itinéraires"
+                                    value={stats.totalDirections}
+                                    color="#F97316"
+                                    subtitle="Étudiants venus"
+                                />
+                            </View>
+                            <View style={styles.statCardWrapper}>
+                                <StatCard icon="call" label="Appels" value={stats.totalCalls} color="#10B981" subtitle="Réservations" />
+                            </View>
+                        </View>
+                        <View style={styles.statsRow}>
+                            <View style={styles.statCardWrapper}>
+                                <StatCard
+                                    icon="heart"
+                                    label="Favoris"
+                                    value={stats.totalFavorites}
+                                    color="#EF4444"
+                                    subtitle="Clients fidèles"
+                                />
+                            </View>
+                            <View style={styles.statCardWrapper}>
+                                <StatCard
+                                    icon="star"
+                                    label="Note moyenne"
+                                    value={stats.averageRating.toFixed(1)}
+                                    color="#F59E0B"
+                                    subtitle={`${stats.totalReviews} avis`}
+                                />
+                            </View>
                         </View>
                     </View>
 
@@ -460,13 +623,15 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: "600",
     },
-    statsGrid: {
+    statsRow: {
         flexDirection: "row",
-        flexWrap: "wrap",
         gap: 12,
+        marginBottom: 12,
+    },
+    statCardWrapper: {
+        flex: 1,
     },
     statCard: {
-        width: CARD_WIDTH,
         padding: 16,
         borderRadius: 16,
         borderWidth: 1,
@@ -474,7 +639,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
-        elevation: 2,
+        elevation: 3,
     },
     statHeader: {
         flexDirection: "row",
@@ -493,18 +658,6 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 4,
         elevation: 3,
-    },
-    trendBadge: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 2,
-        paddingHorizontal: 6,
-        paddingVertical: 3,
-        borderRadius: 8,
-    },
-    trendText: {
-        fontSize: 11,
-        fontWeight: "700",
     },
     statValue: {
         fontSize: 32,
@@ -559,10 +712,60 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 2,
     },
+    graphHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 16,
+    },
     graphTitle: {
         fontSize: 16,
         fontWeight: "700",
-        marginBottom: 16,
+    },
+    periodBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    periodBadgeText: {
+        fontSize: 12,
+        fontWeight: "700",
+    },
+    chartScroll: {
+        marginHorizontal: -20,
+        paddingHorizontal: 20,
+    },
+    chartLegend: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        marginTop: 12,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: "rgba(0,0,0,0.05)",
+    },
+    chartLegendText: {
+        fontSize: 12,
+        fontStyle: "italic",
+    },
+    tooltip: {
+        position: "absolute",
+        top: 25,
+        right: -10,
+        backgroundColor: "white",
+        padding: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        width: 200,
+        zIndex: 1000,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    tooltipText: {
+        fontSize: 12,
+        lineHeight: 16,
     },
     valueCard: {
         marginHorizontal: 20,

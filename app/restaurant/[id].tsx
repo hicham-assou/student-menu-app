@@ -1,5 +1,4 @@
 import {
-    Alert,
     Dimensions,
     Image,
     Linking,
@@ -11,7 +10,7 @@ import {
     View,
 } from "react-native"
 import {SafeAreaView} from "react-native-safe-area-context"
-import {useLocalSearchParams, useRouter} from "expo-router"
+import {useLocalSearchParams, useNavigation, useRouter} from "expo-router"
 import {Ionicons} from "@expo/vector-icons"
 import {useCallback, useEffect, useState} from "react"
 import {useColorScheme} from "@/components/useColorScheme.web"
@@ -26,6 +25,7 @@ import {ReviewStats} from "@/components/reviews/ReviewStats"
 import {ReviewForm} from "@/components/reviews/ReviewForm"
 import {ReviewCard} from "@/components/reviews/ReviewCard"
 import {AuthModal} from "@/components/ui/AutoModal"
+import {CustomAlertManager} from "@/components/CustomAlert"
 import type {Restaurant, Review} from "@/types"
 
 const {width} = Dimensions.get("window")
@@ -36,6 +36,7 @@ export default function RestaurantDetailScreen() {
     const colors = Colors[colorScheme]
     const {id} = useLocalSearchParams<{ id: string }>()
     const router = useRouter()
+    const navigation = useNavigation()
     const {user} = useAuth()
 
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
@@ -118,7 +119,14 @@ export default function RestaurantDetailScreen() {
         loadData()
     }, [loadData])
 
-    // Tracking automatique des vues de restaurant
+    useEffect(() => {
+        if (restaurant) {
+            navigation.setOptions({
+                title: restaurant.name,
+            })
+        }
+    }, [restaurant, navigation])
+
     useEffect(() => {
         if (id) {
             trackEvent(id, "view")
@@ -138,7 +146,7 @@ export default function RestaurantDetailScreen() {
             setIsFav(newFavState)
             await trackEvent(id, newFavState ? "favorite" : "unfavorite")
         } catch (error) {
-            Alert.alert("Erreur", "Impossible de modifier le favori")
+            CustomAlertManager.alert("Erreur", "Impossible de modifier le favori", "error")
         }
     }
 
@@ -206,10 +214,6 @@ export default function RestaurantDetailScreen() {
                         style={styles.image}
                         resizeMode="cover"
                     />
-
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color="#FFFFFF"/>
-                    </TouchableOpacity>
 
                     <TouchableOpacity onPress={handleToggleFavorite} style={styles.favoriteButton}>
                         <Ionicons name={isFav ? "heart" : "heart-outline"} size={24}
@@ -311,10 +315,13 @@ export default function RestaurantDetailScreen() {
                                         </View>
 
                                         {/* Icône centrale */}
-                                        <View
-                                            style={[styles.menuIconContainer, {backgroundColor: `${colors.primary}15`}]}>
-                                            <Ionicons name="restaurant" size={40} color={colors.primary}/>
-                                        </View>
+                                        {item.image_url ? (
+                                            <Image source={{ uri: item.image_url }} style={styles.menuImage} resizeMode="cover" />
+                                        ) : (
+                                            <View style={[styles.menuImage, { backgroundColor: `${colors.primary}15` }]}>
+                                                <Ionicons name="restaurant" size={40} color={colors.primary} />
+                                            </View>
+                                        )}
 
                                         {/* Titre du menu */}
                                         <Text
@@ -447,14 +454,6 @@ const styles = StyleSheet.create({
     image: {
         width: "100%",
         height: 250,
-    },
-    backButton: {
-        position: "absolute",
-        top: 50,
-        left: 16,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        borderRadius: 20,
-        padding: 8,
     },
     favoriteButton: {
         position: "absolute",
@@ -601,7 +600,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: "700",
     },
-    menuIconContainer: {
+    menuImage: {
         width: 80,
         height: 80,
         borderRadius: 40,
