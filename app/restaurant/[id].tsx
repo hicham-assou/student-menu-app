@@ -1,3 +1,5 @@
+"use client"
+
 import {
     Dimensions,
     Image,
@@ -9,39 +11,40 @@ import {
     TouchableOpacity,
     View,
 } from "react-native"
-import {SafeAreaView} from "react-native-safe-area-context"
-import {useLocalSearchParams, useNavigation, useRouter} from "expo-router"
-import {Ionicons} from "@expo/vector-icons"
-import {useCallback, useEffect, useState} from "react"
-import {useColorScheme} from "@/components/useColorScheme.web"
-import {Colors} from "@/constants/Colors"
-import {useAuth} from "@/contexts/AuthContext"
-import {getRestaurants} from "@/lib/api"
-import {isFavorite as checkFavorite, toggleFavorite} from "@/lib/favorites"
-import {getRestaurantReviews, getRestaurantReviewStats, getUserReview} from "@/lib/reviews"
-import {isRestaurantOwner} from "@/lib/restaurants"
-import {trackEvent} from "@/lib/analytics"
-import {ReviewStats} from "@/components/reviews/ReviewStats"
-import {ReviewForm} from "@/components/reviews/ReviewForm"
-import {ReviewCard} from "@/components/reviews/ReviewCard"
-import {AuthModal} from "@/components/ui/AutoModal"
-import {CustomAlertManager} from "@/components/CustomAlert"
-import type {Restaurant, Review} from "@/types"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { useLocalSearchParams, useRouter } from "expo-router"
+import { Ionicons } from "@expo/vector-icons"
+import { useCallback, useEffect, useState } from "react"
+import { useColorScheme } from "@/components/useColorScheme.web"
+import { Colors } from "@/constants/Colors"
+import { useAuth } from "@/contexts/AuthContext"
+import { getRestaurants } from "@/lib/api"
+import { isFavorite as checkFavorite, toggleFavorite } from "@/lib/favorites"
+import { getRestaurantReviews, getRestaurantReviewStats, getUserReview } from "@/lib/reviews"
+import { isRestaurantOwner } from "@/lib/restaurants"
+import { trackEvent } from "@/lib/analytics"
+import { ReviewStats } from "@/components/reviews/ReviewStats"
+import { ReviewForm } from "@/components/reviews/ReviewForm"
+import { ReviewCard } from "@/components/reviews/ReviewCard"
+import { AuthModal } from "@/components/ui/AutoModal"
+import { useNavigation } from "expo-router"
+import { CustomAlertManager } from "@/components/CustomAlert"
+import type { Restaurant, Review } from "@/types"
 
-const {width} = Dimensions.get("window")
+const { width } = Dimensions.get("window")
 const MENU_CARD_WIDTH = width * 0.85
 
 export default function RestaurantDetailScreen() {
     const colorScheme = useColorScheme() ?? "light"
     const colors = Colors[colorScheme]
-    const {id} = useLocalSearchParams<{ id: string }>()
+    const { id } = useLocalSearchParams<{ id: string }>()
     const router = useRouter()
     const navigation = useNavigation()
-    const {user} = useAuth()
+    const { user } = useAuth()
 
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
     const [reviews, setReviews] = useState<Review[]>([])
-    const [stats, setStats] = useState({average: 0, total: 0, distribution: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}})
+    const [stats, setStats] = useState({ average: 0, total: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } })
     const [userReview, setUserReview] = useState<Review | null>(null)
     const [isFav, setIsFav] = useState(false)
     const [loading, setLoading] = useState(true)
@@ -180,9 +183,9 @@ export default function RestaurantDetailScreen() {
 
     if (loading || !restaurant) {
         return (
-            <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
+            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
                 <View style={styles.loading}>
-                    <Text style={{color: colors.textSecondary}}>Chargement...</Text>
+                    <Text style={{ color: colors.textSecondary }}>Chargement...</Text>
                 </View>
             </SafeAreaView>
         )
@@ -191,7 +194,7 @@ export default function RestaurantDetailScreen() {
     const displayedReviews = showAllReviews ? reviews : reviews.slice(0, 3)
 
     return (
-        <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]} edges={["bottom"]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["bottom"]}>
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 refreshControl={
@@ -216,14 +219,13 @@ export default function RestaurantDetailScreen() {
                     />
 
                     <TouchableOpacity onPress={handleToggleFavorite} style={styles.favoriteButton}>
-                        <Ionicons name={isFav ? "heart" : "heart-outline"} size={24}
-                                  color={isFav ? "#EF4444" : "#FFFFFF"}/>
+                        <Ionicons name={isFav ? "heart" : "heart-outline"} size={24} color={isFav ? "#EF4444" : "#FFFFFF"} />
                     </TouchableOpacity>
 
                     {/* Bouton de modification pour les propriétaires */}
                     {isOwner && (
                         <TouchableOpacity onPress={() => router.push(`/owner/edit/${id}`)} style={styles.editButton}>
-                            <Ionicons name="create-outline" size={24} color="#FFFFFF"/>
+                            <Ionicons name="create-outline" size={24} color="#FFFFFF" />
                         </TouchableOpacity>
                     )}
                 </View>
@@ -231,46 +233,42 @@ export default function RestaurantDetailScreen() {
                 {/* Contenu */}
                 <View style={styles.content}>
                     <View style={styles.header}>
-                        <Text style={[styles.name, {color: colors.text}]}>{restaurant.name}</Text>
+                        <Text style={[styles.name, { color: colors.text }]}>{restaurant.name}</Text>
 
                         {stats.total > 0 && (
                             <View style={styles.ratingRow}>
-                                <Ionicons name="star" size={18} color="#F59E0B"/>
-                                <Text
-                                    style={[styles.ratingText, {color: colors.text}]}>{stats.average.toFixed(1)}</Text>
-                                <Text
-                                    style={[styles.reviewCount, {color: colors.textSecondary}]}>({stats.total} avis)</Text>
+                                <Ionicons name="star" size={18} color="#F59E0B" />
+                                <Text style={[styles.ratingText, { color: colors.text }]}>{stats.average.toFixed(1)}</Text>
+                                <Text style={[styles.reviewCount, { color: colors.textSecondary }]}>({stats.total} avis)</Text>
                             </View>
                         )}
 
                         <View style={styles.infoRow}>
-                            <Ionicons name="location" size={16} color={colors.textSecondary}/>
-                            <Text style={[styles.infoText, {color: colors.textSecondary}]}>
+                            <Ionicons name="location" size={16} color={colors.textSecondary} />
+                            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
                                 {restaurant.address}, {restaurant.city}
                             </Text>
                         </View>
 
                         <View style={styles.infoRow}>
-                            <Ionicons name="time" size={16} color={colors.textSecondary}/>
-                            <Text
-                                style={[styles.infoText, {color: colors.textSecondary}]}>{restaurant.opening_hours}</Text>
+                            <Ionicons name="time" size={16} color={colors.textSecondary} />
+                            <Text style={[styles.infoText, { color: colors.textSecondary }]}>{restaurant.opening_hours}</Text>
                         </View>
                     </View>
 
                     {/* Boutons d'action */}
                     <View style={styles.actions}>
                         {restaurant.phone && (
-                            <TouchableOpacity onPress={handleCall}
-                                              style={[styles.actionButton, {backgroundColor: colors.primary}]}>
-                                <Ionicons name="call" size={20} color="#FFFFFF"/>
+                            <TouchableOpacity onPress={handleCall} style={[styles.actionButton, { backgroundColor: colors.primary }]}>
+                                <Ionicons name="call" size={20} color="#FFFFFF" />
                                 <Text style={styles.actionButtonText}>Appeler</Text>
                             </TouchableOpacity>
                         )}
                         <TouchableOpacity
                             onPress={handleDirections}
-                            style={[styles.actionButton, {backgroundColor: colors.primary}]}
+                            style={[styles.actionButton, { backgroundColor: colors.primary }]}
                         >
-                            <Ionicons name="navigate" size={20} color="#FFFFFF"/>
+                            <Ionicons name="navigate" size={20} color="#FFFFFF" />
                             <Text style={styles.actionButtonText}>Itineraire</Text>
                         </TouchableOpacity>
                     </View>
@@ -281,11 +279,11 @@ export default function RestaurantDetailScreen() {
                             {/* En-tête avec badge */}
                             <View style={styles.menuHeader}>
                                 <View style={styles.menuTitleRow}>
-                                    <Ionicons name="school" size={24} color={colors.primary}/>
-                                    <Text style={[styles.menuSectionTitle, {color: colors.text}]}>Menus Étudiants</Text>
+                                    <Ionicons name="school" size={24} color={colors.primary} />
+                                    <Text style={[styles.menuSectionTitle, { color: colors.text }]}>Menus Étudiants</Text>
                                 </View>
-                                <View style={[styles.studentBadge, {backgroundColor: colors.primary}]}>
-                                    <Ionicons name="star" size={12} color="#FFFFFF"/>
+                                <View style={[styles.studentBadge, { backgroundColor: colors.primary }]}>
+                                    <Ionicons name="star" size={12} color="#FFFFFF" />
                                     <Text style={styles.studentBadgeText}>Offre spéciale</Text>
                                 </View>
                             </View>
@@ -298,54 +296,58 @@ export default function RestaurantDetailScreen() {
                                 decelerationRate="fast"
                                 contentContainerStyle={styles.menuScrollContent}
                             >
-                                {restaurant.student_menu.map((item, index) => (
-                                    <View
-                                        key={index}
-                                        style={[
-                                            styles.premiumMenuCard,
-                                            {
-                                                backgroundColor: colors.surface,
-                                                borderColor: colors.primary,
-                                            },
-                                        ]}
-                                    >
-                                        {/* Badge numéro */}
-                                        <View style={[styles.menuNumber, {backgroundColor: colors.primary}]}>
-                                            <Text style={styles.menuNumberText}>#{index + 1}</Text>
-                                        </View>
-
-                                        {/* Icône centrale */}
-                                        {item.image_url ? (
-                                            <Image source={{ uri: item.image_url }} style={styles.menuImage} resizeMode="cover" />
-                                        ) : (
-                                            <View style={[styles.menuImage, { backgroundColor: `${colors.primary}15` }]}>
-                                                <Ionicons name="restaurant" size={40} color={colors.primary} />
+                                {[...restaurant.student_menu]
+                                    .sort((a, b) => {
+                                        // Extract numeric value from price string (e.g., "9.20€" -> 9.20)
+                                        const priceA = Number.parseFloat(a.price.replace("€", "").replace(",", "."))
+                                        const priceB = Number.parseFloat(b.price.replace("€", "").replace(",", "."))
+                                        return priceA - priceB
+                                    })
+                                    .map((item, index) => (
+                                        <View
+                                            key={index}
+                                            style={[
+                                                styles.premiumMenuCard,
+                                                {
+                                                    backgroundColor: colors.surface,
+                                                    borderColor: colors.primary,
+                                                },
+                                            ]}
+                                        >
+                                            {/* Badge numéro */}
+                                            <View style={[styles.menuNumber, { backgroundColor: colors.primary }]}>
+                                                <Text style={styles.menuNumberText}>#{index + 1}</Text>
                                             </View>
-                                        )}
 
-                                        {/* Titre du menu */}
-                                        <Text
-                                            style={[styles.premiumMenuTitle, {color: colors.text}]}>{item.title}</Text>
+                                            {item.image_url ? (
+                                                <Image source={{ uri: item.image_url }} style={styles.menuImage} resizeMode="cover" />
+                                            ) : (
+                                                <View style={[styles.menuImage, { backgroundColor: `${colors.primary}15` }]}>
+                                                    <Ionicons name="restaurant" size={40} color={colors.primary} />
+                                                </View>
+                                            )}
 
-                                        {/* Séparateur */}
-                                        <View style={[styles.menuDivider, {backgroundColor: colors.border}]}/>
+                                            {/* Titre du menu */}
+                                            <Text style={[styles.premiumMenuTitle, { color: colors.text }]}>{item.title}</Text>
 
-                                        {/* Prix avec badge */}
-                                        <View style={styles.priceContainer}>
-                                            <Text style={[styles.priceLabel, {color: colors.textSecondary}]}>Prix
-                                                étudiant</Text>
-                                            <View style={[styles.premiumPriceBadge, {backgroundColor: colors.primary}]}>
-                                                <Text style={styles.premiumPriceText}>{item.price}</Text>
+                                            {/* Séparateur */}
+                                            <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
+
+                                            {/* Prix avec badge */}
+                                            <View style={styles.priceContainer}>
+                                                <Text style={[styles.priceLabel, { color: colors.textSecondary }]}>Prix étudiant</Text>
+                                                <View style={[styles.premiumPriceBadge, { backgroundColor: colors.primary }]}>
+                                                    <Text style={styles.premiumPriceText}>{item.price}</Text>
+                                                </View>
+                                            </View>
+
+                                            {/* Badge "Bon plan" */}
+                                            <View style={styles.dealBadge}>
+                                                <Ionicons name="flash" size={14} color="#F59E0B" />
+                                                <Text style={styles.dealBadgeText}>Bon plan</Text>
                                             </View>
                                         </View>
-
-                                        {/* Badge "Bon plan" */}
-                                        <View style={styles.dealBadge}>
-                                            <Ionicons name="flash" size={14} color="#F59E0B"/>
-                                            <Text style={styles.dealBadgeText}>Bon plan</Text>
-                                        </View>
-                                    </View>
-                                ))}
+                                    ))}
                             </ScrollView>
 
                             {/* Info supplémentaire */}
@@ -358,8 +360,8 @@ export default function RestaurantDetailScreen() {
                                     },
                                 ]}
                             >
-                                <Ionicons name="information-circle" size={18} color={colors.primary}/>
-                                <Text style={[styles.menuFooterText, {color: colors.text}]}>
+                                <Ionicons name="information-circle" size={18} color={colors.primary} />
+                                <Text style={[styles.menuFooterText, { color: colors.text }]}>
                                     Présente ta carte étudiante pour bénéficier de ces prix
                                 </Text>
                             </View>
@@ -369,26 +371,26 @@ export default function RestaurantDetailScreen() {
                     {/* Description */}
                     {restaurant.description && (
                         <View style={styles.section}>
-                            <Text style={[styles.sectionTitle, {color: colors.text}]}>Description</Text>
-                            <Text style={[styles.description, {color: colors.text}]}>{restaurant.description}</Text>
+                            <Text style={[styles.sectionTitle, { color: colors.text }]}>Description</Text>
+                            <Text style={[styles.description, { color: colors.text }]}>{restaurant.description}</Text>
                         </View>
                     )}
 
                     {/* Section Avis */}
                     <View style={styles.section}>
                         <View style={styles.reviewsHeader}>
-                            <Text style={[styles.sectionTitle, {color: colors.text}]}>
+                            <Text style={[styles.sectionTitle, { color: colors.text }]}>
                                 Avis {stats.total > 0 && `(${stats.total})`}
                             </Text>
                             <TouchableOpacity
                                 onPress={handleAddReview}
-                                style={[styles.addReviewButton, {backgroundColor: colors.primary}]}
+                                style={[styles.addReviewButton, { backgroundColor: colors.primary }]}
                             >
-                                <Ionicons name="add" size={16} color="#FFFFFF"/>
+                                <Ionicons name="add" size={16} color="#FFFFFF" />
                             </TouchableOpacity>
                         </View>
 
-                        {stats.total > 0 && <ReviewStats average={stats.average} total={stats.total}/>}
+                        {stats.total > 0 && <ReviewStats average={stats.average} total={stats.total} />}
 
                         {showReviewForm && (
                             <ReviewForm
@@ -400,7 +402,7 @@ export default function RestaurantDetailScreen() {
                         )}
 
                         {reviews.length === 0 && !showReviewForm && (
-                            <Text style={[styles.noReviews, {color: colors.textSecondary}]}>
+                            <Text style={[styles.noReviews, { color: colors.textSecondary }]}>
                                 Aucun avis pour le moment. Sois le premier a en laisser un !
                             </Text>
                         )}
@@ -417,13 +419,12 @@ export default function RestaurantDetailScreen() {
                         {reviews.length > 3 && (
                             <TouchableOpacity
                                 onPress={() => setShowAllReviews(!showAllReviews)}
-                                style={[styles.showMoreButton, {borderColor: colors.border}]}
+                                style={[styles.showMoreButton, { borderColor: colors.border }]}
                             >
-                                <Text style={[styles.showMoreText, {color: colors.primary}]}>
+                                <Text style={[styles.showMoreText, { color: colors.primary }]}>
                                     {showAllReviews ? "Voir moins" : `Voir tous les avis (${reviews.length})`}
                                 </Text>
-                                <Ionicons name={showAllReviews ? "chevron-up" : "chevron-down"} size={18}
-                                          color={colors.primary}/>
+                                <Ionicons name={showAllReviews ? "chevron-up" : "chevron-down"} size={18} color={colors.primary} />
                             </TouchableOpacity>
                         )}
                     </View>
@@ -579,7 +580,7 @@ const styles = StyleSheet.create({
         padding: 24,
         marginRight: 16,
         shadowColor: "#000",
-        shadowOffset: {width: 0, height: 4},
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.15,
         shadowRadius: 12,
         elevation: 5,
@@ -637,7 +638,7 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         borderRadius: 20,
         shadowColor: "#000",
-        shadowOffset: {width: 0, height: 2},
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
         shadowRadius: 4,
         elevation: 3,
