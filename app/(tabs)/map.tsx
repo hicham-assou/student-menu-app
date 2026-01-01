@@ -1,14 +1,4 @@
-import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native"
+import {ActivityIndicator, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View,} from "react-native"
 import {SafeAreaView} from "react-native-safe-area-context"
 import {useEffect, useRef, useState} from "react"
 import MapView, {Circle, Marker, PROVIDER_GOOGLE} from "react-native-maps"
@@ -20,6 +10,7 @@ import {Colors} from "@/constants/Colors"
 import {getRestaurants} from "@/lib/api"
 import {calculateDistance, formatDistance} from "@/lib/utils"
 import type {Restaurant} from "@/types"
+import {CustomAlertManager} from "@/components/CustomAlert"
 
 const {width, height} = Dimensions.get("window")
 const ASPECT_RATIO = width / height
@@ -79,7 +70,7 @@ export default function MapScreen() {
             setRestaurants(data)
         } catch (error) {
             console.error("Error loading restaurants:", error)
-            Alert.alert("Erreur", "Impossible de charger les restaurants")
+            CustomAlertManager.alert("Erreur", "Impossible de charger les restaurants", undefined, "error")
         } finally {
             setLoading(false)
         }
@@ -111,10 +102,15 @@ export default function MapScreen() {
 
     const centerOnUser = async () => {
         if (!hasLocationPermission) {
-            Alert.alert("Localisation désactivée", "Autorise la localisation pour centrer la carte sur ta position", [
-                {text: "Annuler", style: "cancel"},
-                {text: "Activer", onPress: requestLocationPermission},
-            ])
+            CustomAlertManager.alert(
+                "Localisation désactivée",
+                "Autorise la localisation pour centrer la carte sur ta position",
+                [
+                    {text: "Annuler", style: "cancel"},
+                    {text: "Activer", onPress: requestLocationPermission},
+                ],
+                "warning",
+            )
             return
         }
 
@@ -129,7 +125,7 @@ export default function MapScreen() {
             setUserLocation(newRegion)
             mapRef.current?.animateToRegion(newRegion)
         } catch (error) {
-            Alert.alert("Erreur", "Impossible de récupérer ta position")
+            CustomAlertManager.alert("Erreur", "Impossible de récupérer ta position", undefined, "error")
         }
     }
 

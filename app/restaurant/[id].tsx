@@ -1,7 +1,4 @@
-"use client"
-
 import {
-    Alert,
     Dimensions,
     Image,
     Linking,
@@ -28,6 +25,7 @@ import {ReviewStats} from "@/components/reviews/ReviewStats"
 import {ReviewForm} from "@/components/reviews/ReviewForm"
 import {ReviewCard} from "@/components/reviews/ReviewCard"
 import {AuthModal} from "@/components/ui/AutoModal"
+import {CustomAlertManager} from "@/components/CustomAlert"
 import type {Restaurant, Review} from "@/types"
 
 const {width} = Dimensions.get("window")
@@ -148,7 +146,7 @@ export default function RestaurantDetailScreen() {
             setIsFav(newFavState)
             await trackEvent(id, newFavState ? "favorite" : "unfavorite")
         } catch (error) {
-            Alert.alert("Erreur", "Impossible de modifier le favori")
+            CustomAlertManager.alert("Erreur", "Impossible de modifier le favori", undefined, "error")
         }
     }
 
@@ -216,6 +214,10 @@ export default function RestaurantDetailScreen() {
                         style={styles.image}
                         resizeMode="cover"
                     />
+
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <Ionicons name="arrow-back" size={24} color="#FFFFFF"/>
+                    </TouchableOpacity>
 
                     <TouchableOpacity onPress={handleToggleFavorite} style={styles.favoriteButton}>
                         <Ionicons name={isFav ? "heart" : "heart-outline"} size={24}
@@ -453,6 +455,14 @@ const styles = StyleSheet.create({
     image: {
         width: "100%",
         height: 250,
+    },
+    backButton: {
+        position: "absolute",
+        top: 50,
+        left: 16,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        borderRadius: 20,
+        padding: 8,
     },
     favoriteButton: {
         position: "absolute",

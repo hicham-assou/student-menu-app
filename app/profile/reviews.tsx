@@ -1,6 +1,6 @@
 "use client"
 
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Image } from "react-native"
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
@@ -8,6 +8,7 @@ import { Colors } from "@/constants/Colors"
 import { useAuth } from "@/contexts/AuthContext"
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
+import { CustomAlertManager } from "@/components/CustomAlert"
 
 interface Review {
     id: string
@@ -66,26 +67,31 @@ export default function MyReviewsScreen() {
     }
 
     const handleDeleteReview = async (reviewId: string) => {
-        Alert.alert("Supprimer l'avis", "Es-tu sûr de vouloir supprimer cet avis ?", [
-            { text: "Annuler", style: "cancel" },
-            {
-                text: "Supprimer",
-                style: "destructive",
-                onPress: async () => {
-                    try {
-                        const { error } = await supabase.from("reviews").delete().eq("id", reviewId)
+        CustomAlertManager.alert(
+            "Supprimer l'avis",
+            "Es-tu sûr de vouloir supprimer cet avis ?",
+            [
+                { text: "Annuler", style: "cancel" },
+                {
+                    text: "Supprimer",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            const { error } = await supabase.from("reviews").delete().eq("id", reviewId)
 
-                        if (error) throw error
+                            if (error) throw error
 
-                        setReviews(reviews.filter((r) => r.id !== reviewId))
-                        Alert.alert("Succès", "Ton avis a été supprimé")
-                    } catch (error) {
-                        console.error("Error deleting review:", error)
-                        Alert.alert("Erreur", "Impossible de supprimer l'avis")
-                    }
+                            setReviews(reviews.filter((r) => r.id !== reviewId))
+                            CustomAlertManager.alert("Succès", "Ton avis a été supprimé", undefined, "success")
+                        } catch (error) {
+                            console.error("Error deleting review:", error)
+                            CustomAlertManager.alert("Erreur", "Impossible de supprimer l'avis", undefined, "error")
+                        }
+                    },
                 },
-            },
-        ])
+            ],
+            "confirm",
+        )
     }
 
     const renderStars = (rating: number) => {
@@ -143,6 +149,7 @@ export default function MyReviewsScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+
             {reviews.length === 0 ? (
                 <View style={styles.emptyContainer}>
                     <Ionicons name="star-outline" size={64} color={colors.textSecondary} />
@@ -168,11 +175,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    backButton: {
-        width: 40,
-        height: 40,
-        justifyContent: "center",
-        alignItems: "center",
+    title: {
+        fontSize: 20,
+        fontWeight: "700",
     },
     listContent: {
         padding: 20,

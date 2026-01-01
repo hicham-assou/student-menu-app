@@ -1,26 +1,27 @@
-import {Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View} from 'react-native'
-import {SafeAreaView} from 'react-native-safe-area-context'
-import {useState} from 'react'
-import {useRouter} from 'expo-router'
-import {useColorScheme} from "@/components/useColorScheme.web";
-import {Colors} from '@/constants/Colors'
-import {useAuth} from '@/contexts/AuthContext'
-import {Input} from '@/components/ui/Input'
-import {Button} from '@/components/ui/Button'
+"use client"
+
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { useState } from "react"
+import { useRouter } from "expo-router"
+import { Colors } from "@/constants/Colors"
+import { useAuth } from "@/contexts/AuthContext"
+import { Input } from "@/components/ui/Input"
+import { Button } from "@/components/ui/Button"
+import { CustomAlertManager} from "@/components/CustomAlert";
 
 export default function LoginScreen() {
-    const colorScheme = useColorScheme() ?? 'light'
-    const colors = Colors[colorScheme]
+    const colors = Colors.light
     const router = useRouter()
-    const {signIn} = useAuth()
+    const { signIn } = useAuth()
 
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
+    const [email, setEmail] = useState("")
+    const [password, setPassword] = useState("")
     const [loading, setLoading] = useState(false)
 
     const handleLogin = async () => {
         if (!email || !password) {
-            Alert.alert('Erreur', 'Veuillez remplir tous les champs')
+            CustomAlertManager.alert("Erreur", "Veuillez remplir tous les champs", "error")
             return
         }
 
@@ -29,21 +30,18 @@ export default function LoginScreen() {
             await signIn(email, password)
             router.back()
         } catch (error: any) {
-            Alert.alert('Erreur de connexion', error.message)
+            CustomAlertManager.alert("Erreur de connexion", error.message, "error")
         } finally {
             setLoading(false)
         }
     }
 
     return (
-        <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.content}
-            >
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.content}>
                 <View style={styles.header}>
-                    <Text style={[styles.title, {color: colors.text}]}>Connexion</Text>
-                    <Text style={[styles.subtitle, {color: colors.textSecondary}]}>
+                    <Text style={[styles.title, { color: colors.text }]}>Connexion</Text>
+                    <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
                         Connecte-toi pour acceder a tes favoris
                     </Text>
                 </View>
@@ -67,19 +65,17 @@ export default function LoginScreen() {
                     />
 
                     <Button
-                        title={loading ? 'Connexion...' : 'Se connecter'}
+                        title={loading ? "Connexion..." : "Se connecter"}
                         onPress={handleLogin}
                         loading={loading}
                         style={styles.button}
                     />
 
                     <View style={styles.footer}>
-                        <Text style={[styles.footerText, {color: colors.textSecondary}]}>
-                            Pas encore de compte ?
-                        </Text>
+                        <Text style={[styles.footerText, { color: colors.textSecondary }]}>Pas encore de compte ?</Text>
                         <Button
                             title="S'inscrire"
-                            onPress={() => router.push('/auth/signup')}
+                            onPress={() => router.push("/auth/signup")}
                             variant="outline"
                             style={styles.linkButton}
                         />
@@ -103,7 +99,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 28,
-        fontWeight: '700',
+        fontWeight: "700",
         marginBottom: 8,
     },
     subtitle: {
@@ -117,13 +113,13 @@ const styles = StyleSheet.create({
     },
     footer: {
         marginTop: 24,
-        alignItems: 'center',
+        alignItems: "center",
         gap: 12,
     },
     footerText: {
         fontSize: 14,
     },
     linkButton: {
-        width: '100%',
+        width: "100%",
     },
 })

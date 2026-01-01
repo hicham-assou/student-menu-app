@@ -1,10 +1,11 @@
 "use client"
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import type { Review } from "@/types"
 import { Colors } from "@/constants/Colors"
 import { deleteReview } from "@/lib/reviews"
 import { useAuth } from "@/contexts/AuthContext"
+import { CustomAlertManager } from "@/components/CustomAlert"
 
 interface ReviewCardProps {
     review: Review
@@ -18,19 +19,24 @@ export function ReviewCard({ review, onDeleted, onEdit }: ReviewCardProps) {
     const isOwnReview = user?.id === review.user_id
 
     const handleDelete = () => {
-        Alert.alert("Supprimer l'avis", "Êtes-vous sûr de vouloir supprimer cet avis ?", [
-            { text: "Annuler", style: "cancel" },
-            {
-                text: "Supprimer",
-                style: "destructive",
-                onPress: async () => {
-                    const success = await deleteReview(review.id)
-                    if (success && onDeleted) {
-                        onDeleted()
-                    }
+        CustomAlertManager.alert(
+            "Supprimer l'avis",
+            "Êtes-vous sûr de vouloir supprimer cet avis ?",
+            [
+                { text: "Annuler", style: "cancel" },
+                {
+                    text: "Supprimer",
+                    style: "destructive",
+                    onPress: async () => {
+                        const success = await deleteReview(review.id)
+                        if (success && onDeleted) {
+                            onDeleted()
+                        }
+                    },
                 },
-            },
-        ])
+            ],
+            "confirm",
+        )
     }
 
     const formatDate = (dateString: string) => {
