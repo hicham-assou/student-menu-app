@@ -20,7 +20,7 @@ import { useColorScheme } from "@/components/useColorScheme.web"
 import { Colors } from "@/constants/Colors"
 import { useAuth } from "@/contexts/AuthContext"
 import { getRestaurants } from "@/lib/api"
-import { isRestaurantOwner, updateRestaurant } from "@/lib/restaurants"
+import { isRestaurantOwner } from "@/lib/restaurants"
 import { Button } from "@/components/ui/Button"
 import type { Restaurant } from "@/types"
 import * as ImagePicker from "expo-image-picker"
@@ -40,7 +40,7 @@ export default function EditRestaurantScreen() {
     const [isOwner, setIsOwner] = useState(false)
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
     const [image, setImage] = useState("")
-    const [studentMenus, setStudentMenus] = useState<Array<{ title: string; price: string }>>([])
+    const [studentMenus, setStudentMenus] = useState<Array<{ title: string; price: string; image_url?: string }>>([])
     const [uploading, setUploading] = useState(false)
     const [name, setName] = useState("")
     const [address, setAddress] = useState("")
@@ -48,6 +48,9 @@ export default function EditRestaurantScreen() {
     const [phone, setPhone] = useState("")
     const [openingHours, setOpeningHours] = useState("")
     const [description, setDescription] = useState("")
+    const [isGeocodingAddress, setIsGeocodingAddress] = useState(false)
+    const [studentMenuConditions, setStudentMenuConditions] = useState("")
+    const [imageUrl, setImageUrl] = useState("")
 
     useEffect(() => {
         loadRestaurant()
@@ -142,7 +145,15 @@ export default function EditRestaurantScreen() {
                 setOpeningHours(found.opening_hours || "")
                 setDescription(found.description || "")
                 setImage(found.image || "")
-                setStudentMenus(found.student_menu || [])
+                setImageUrl(found.image_url || "")
+                setStudentMenus(
+                    found.student_menu?.map((menu) => ({
+                        title: menu.title,
+                        price: menu.price.replace("€", "").trim(), // Remove € for editing
+                        image_url: menu.image_url || "",
+                    })) || [],
+                )
+                setStudentMenuConditions(found.student_menu_conditions || "")
             } else {
                 CustomAlertManager.alert("Erreur", "Restaurant introuvable", "error")
                 router.back()
@@ -157,17 +168,68 @@ export default function EditRestaurantScreen() {
     }
 
     const handleAddMenu = () => {
-        setStudentMenus([...studentMenus, { title: "", price: "" }])
+        setStudentMenus([...studentMenus, { title: "", price: "", image_url: "" }])
     }
 
     const handleRemoveMenu = (index: number) => {
         setStudentMenus(studentMenus.filter((_, i) => i !== index))
     }
 
-    const handleMenuChange = (index: number, field: "title" | "price", value: string) => {
+    const handleMenuChange = (index: number, field: "title" | "price" | "image_url", value: string) => {
         const newMenus = [...studentMenus]
         newMenus[index][field] = value
         setStudentMenus(newMenus)
+    }
+
+    const pickMenuImage = async (menuIndex: number) => {
+        try {
+            const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
+
+            if (!permissionResult.granted) {
+                CustomAlertManager.alert("Permission refusée", "Vous devez autoriser l'accès à la galerie", "error")
+                return
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [4, 3],
+                quality: 0.8,
+            })
+
+            if (!result.canceled && result.assets[0]) {
+                setUploading(true)
+                const imageUri = result.assets[0].uri
+                const fileName = `menu-${id}-${menuIndex}-${Date.now()}.jpg`
+
+                const formData = new FormData()
+                formData.append("file", {
+                    uri: imageUri,
+                    name: fileName,
+                    type: "image/jpeg",
+                } as any)
+
+                const { data, error } = await supabase.storage.from("restaurant-images").upload(fileName, formData)
+
+                if (error) {
+                    console.error("Upload error:", error)
+                    CustomAlertManager.alert("Erreur", "Impossible d'uploader l'image", "error")
+                    return
+                }
+
+                const {
+                    data: { publicUrl },
+                } = supabase.storage.from("restaurant-images").getPublicUrl(fileName)
+
+                handleMenuChange(menuIndex, "image_url", publicUrl)
+                CustomAlertManager.alert("Succès", "Image uploadée avec succès", "success")
+            }
+        } catch (error) {
+            console.error("Error picking menu image:", error)
+            CustomAlertManager.alert("Erreur", "Impossible de sélectionner l'image", "error")
+        } finally {
+            setUploading(false)
+        }
     }
 
     const handleSave = async () => {
@@ -185,21 +247,62 @@ export default function EditRestaurantScreen() {
 
         const validMenus = studentMenus.filter((menu) => menu.title.trim() && menu.price.trim())
 
+        const fullAddress = `${address.trim()}, ${city.trim()}`
+        const coordinates = await geocodeAddress(fullAddress)
+
+        if (!coordinates) {
+            CustomAlertManager.alert(
+                "Adresse introuvable",
+                "Impossible de géolocaliser l'adresse. Vérifie qu'elle est correcte.",
+                "warning",
+                [
+                    { text: "Annuler", style: "cancel" },
+                    {
+                        text: "Continuer quand même",
+                        onPress: async () => {
+                            await saveRestaurant(validMenus, restaurant?.latitude, restaurant?.longitude)
+                        },
+                    },
+                ],
+            )
+            return
+        }
+
+        await saveRestaurant(validMenus, coordinates.latitude, coordinates.longitude)
+    }
+
+    const saveRestaurant = async (
+        validMenus: Array<{ title: string; price: string; image_url?: string }>,
+        newLatitude?: number,
+        newLongitude?: number,
+    ) => {
         try {
             setSaving(true)
 
-            const success = await updateRestaurant(id, {
-                name: name.trim(),
-                address: address.trim(),
-                city: city.trim(),
-                phone: phone.trim(),
-                opening_hours: openingHours.trim(),
-                description: description.trim(),
-                image: image.trim(),
-                student_menu: validMenus,
-            })
+            const formattedMenus = validMenus.map((menu) => ({
+                title: menu.title,
+                price: menu.price.trim() ? `${menu.price.trim()}€` : "", // Add € when saving
+                image_url: menu.image_url || "",
+            }))
 
-            if (success) {
+            const updates = {
+                name,
+                address,
+                city,
+                phone,
+                opening_hours: openingHours,
+                description,
+                student_menu: formattedMenus,
+                student_menu_conditions: studentMenuConditions,
+                image: image,
+                ...(newLatitude && newLongitude ? { latitude: newLatitude, longitude: newLongitude } : {}),
+            }
+
+            const { data, error } = await supabase.from("restaurants").update(updates).eq("id", id).select()
+
+            if (error) throw error
+
+            if (data && data.length > 0) {
                 CustomAlertManager.alert("Succès", "Restaurant mis à jour avec succès", "success", [
                     { text: "OK", onPress: () => router.back() },
                 ])
@@ -211,6 +314,40 @@ export default function EditRestaurantScreen() {
             CustomAlertManager.alert("Erreur", "Une erreur est survenue lors de la sauvegarde", "error")
         } finally {
             setSaving(false)
+        }
+    }
+
+    const geocodeAddress = async (fullAddress: string) => {
+        try {
+            setIsGeocodingAddress(true)
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`,
+                {
+                    headers: {
+                        "User-Agent": "StudentFood/1.0 (Restaurant Management App)",
+                    },
+                },
+            )
+
+            if (!response.ok) {
+                console.error("[v0] Geocoding API error:", response.status)
+                return null
+            }
+
+            const data = await response.json()
+
+            if (data && data.length > 0) {
+                return {
+                    latitude: Number.parseFloat(data[0].lat),
+                    longitude: Number.parseFloat(data[0].lon),
+                }
+            }
+            return null
+        } catch (error) {
+            console.error("Error geocoding address:", error)
+            return null
+        } finally {
+            setIsGeocodingAddress(false)
         }
     }
 
@@ -265,20 +402,32 @@ export default function EditRestaurantScreen() {
 
                         <View style={styles.inputGroup}>
                             <Text style={[styles.label, { color: colors.text }]}>Adresse *</Text>
-                            <TextInput
-                                style={[
-                                    styles.input,
-                                    {
-                                        backgroundColor: colors.surface,
-                                        color: colors.text,
-                                        borderColor: colors.border,
-                                    },
-                                ]}
-                                value={address}
-                                onChangeText={setAddress}
-                                placeholder="Ex: 12 Rue de la République"
-                                placeholderTextColor={colors.textSecondary}
-                            />
+                            <View style={{ position: "relative" }}>
+                                <TextInput
+                                    style={[
+                                        styles.input,
+                                        {
+                                            backgroundColor: colors.surface,
+                                            color: colors.text,
+                                            borderColor: colors.border,
+                                        },
+                                    ]}
+                                    value={address}
+                                    onChangeText={setAddress}
+                                    placeholder="Ex: 12 Rue de la République"
+                                    placeholderTextColor={colors.textSecondary}
+                                />
+                                {isGeocodingAddress && (
+                                    <ActivityIndicator
+                                        size="small"
+                                        color={colors.primary}
+                                        style={{ position: "absolute", right: 12, top: 12 }}
+                                    />
+                                )}
+                            </View>
+                            <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+                                L'adresse sera géolocalisée pour être affichée sur la carte
+                            </Text>
                         </View>
 
                         <View style={styles.inputGroup}>
@@ -409,74 +558,120 @@ export default function EditRestaurantScreen() {
                         </View>
                     </View>
 
+                    {/* Conditions pour les menus étudiants */}
+                    <View style={styles.section}>
+                        <Text style={[styles.sectionTitle, { color: colors.text }]}>Conditions pour les menus étudiants</Text>
+                        <TextInput
+                            style={[
+                                styles.input,
+                                styles.textArea,
+                                {
+                                    backgroundColor: colors.background,
+                                    color: colors.text,
+                                    borderColor: colors.border,
+                                },
+                            ]}
+                            value={studentMenuConditions}
+                            onChangeText={setStudentMenuConditions}
+                            placeholder="Ex: Sur présentation de la carte étudiante valide"
+                            placeholderTextColor={colors.textSecondary}
+                            multiline
+                            numberOfLines={3}
+                        />
+                    </View>
+
                     {/* Menus étudiants */}
                     <View style={styles.section}>
-                        <View style={styles.sectionHeader}>
-                            <View style={styles.menuTitleRow}>
-                                <Ionicons name="school" size={20} color={colors.primary} />
-                                <Text style={[styles.sectionTitle, { color: colors.text }]}>Menus Étudiants</Text>
-                            </View>
-                            <TouchableOpacity onPress={handleAddMenu} style={[styles.addButton, { backgroundColor: colors.primary }]}>
-                                <Ionicons name="add" size={20} color="#FFFFFF" />
-                                <Text style={styles.addButtonText}>Ajouter</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {studentMenus.length === 0 && (
-                            <Text style={[styles.emptyMenuText, { color: colors.textSecondary }]}>
-                                Aucun menu étudiant. Clique sur "Ajouter" pour en créer un.
-                            </Text>
-                        )}
-
+                        <Text style={[styles.sectionTitle, { color: colors.text }]}>Menus Étudiants</Text>
                         {studentMenus.map((menu, index) => (
-                            <View
-                                key={index}
-                                style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                            >
-                                <View style={styles.menuCardHeader}>
-                                    <Text style={[styles.menuCardTitle, { color: colors.text }]}>Menu {index + 1}</Text>
-                                    <TouchableOpacity onPress={() => handleRemoveMenu(index)}>
-                                        <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                                    </TouchableOpacity>
+                            <View key={index} style={styles.menuItem}>
+                                <View style={styles.menuHeader}>
+                                    <Text style={[styles.menuNumber, { color: colors.primary }]}>Menu {index + 1}</Text>
+                                    {studentMenus.length > 1 && (
+                                        <TouchableOpacity onPress={() => handleRemoveMenu(index)}>
+                                            <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                        </TouchableOpacity>
+                                    )}
                                 </View>
 
-                                <View style={styles.inputGroup}>
-                                    <Text style={[styles.label, { color: colors.text }]}>Titre du menu</Text>
-                                    <TextInput
-                                        style={[
-                                            styles.input,
-                                            {
-                                                backgroundColor: colors.background,
-                                                color: colors.text,
-                                                borderColor: colors.border,
-                                            },
-                                        ]}
-                                        value={menu.title}
-                                        onChangeText={(value) => handleMenuChange(index, "title", value)}
-                                        placeholder="Ex: Plat + Boisson + Dessert"
-                                        placeholderTextColor={colors.textSecondary}
-                                    />
-                                </View>
+                                <View style={styles.menuFields}>
+                                    <View style={styles.menuField}>
+                                        <Text style={[styles.label, { color: colors.text }]}>Image du menu (optionnelle)</Text>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.imagePickerButton,
+                                                {
+                                                    backgroundColor: colors.background,
+                                                    borderColor: colors.border,
+                                                },
+                                            ]}
+                                            onPress={() => pickMenuImage(index)}
+                                            disabled={uploading}
+                                        >
+                                            {menu.image_url ? (
+                                                <Image source={{ uri: menu.image_url }} style={styles.menuImagePreview} />
+                                            ) : (
+                                                <View style={styles.imagePlaceholder}>
+                                                    <Ionicons name="image-outline" size={40} color={colors.textSecondary} />
+                                                    <Text style={[styles.imagePlaceholderText, { color: colors.textSecondary }]}>
+                                                        Choisir une image
+                                                    </Text>
+                                                </View>
+                                            )}
+                                        </TouchableOpacity>
+                                    </View>
 
-                                <View style={styles.inputGroup}>
-                                    <Text style={[styles.label, { color: colors.text }]}>Prix</Text>
-                                    <TextInput
-                                        style={[
-                                            styles.input,
-                                            {
-                                                backgroundColor: colors.background,
-                                                color: colors.text,
-                                                borderColor: colors.border,
-                                            },
-                                        ]}
-                                        value={menu.price}
-                                        onChangeText={(value) => handleMenuChange(index, "price", value)}
-                                        placeholder="Ex: 8,50€"
-                                        placeholderTextColor={colors.textSecondary}
-                                    />
+                                    <View style={styles.menuField}>
+                                        <Text style={[styles.label, { color: colors.text }]}>Nom du menu</Text>
+                                        <TextInput
+                                            style={[
+                                                styles.input,
+                                                {
+                                                    backgroundColor: colors.background,
+                                                    color: colors.text,
+                                                    borderColor: colors.border,
+                                                },
+                                            ]}
+                                            value={menu.title}
+                                            onChangeText={(value) => handleMenuChange(index, "title", value)}
+                                            placeholder="Ex: Menu Étudiant Midi"
+                                            placeholderTextColor={colors.textSecondary}
+                                        />
+                                    </View>
+
+                                    <View style={styles.menuField}>
+                                        <Text style={[styles.label, { color: colors.text }]}>Prix</Text>
+                                        <View style={styles.priceInputContainer}>
+                                            <TextInput
+                                                style={[
+                                                    styles.input,
+                                                    styles.priceInput,
+                                                    {
+                                                        backgroundColor: colors.background,
+                                                        color: colors.text,
+                                                        borderColor: colors.border,
+                                                    },
+                                                ]}
+                                                value={menu.price}
+                                                onChangeText={(value) => handleMenuChange(index, "price", value)}
+                                                placeholder="8.50"
+                                                placeholderTextColor={colors.textSecondary}
+                                                keyboardType="decimal-pad"
+                                            />
+                                            <Text style={[styles.euroSymbol, { color: colors.text }]}>€</Text>
+                                        </View>
+                                    </View>
                                 </View>
                             </View>
                         ))}
+
+                        <TouchableOpacity
+                            style={[styles.addButton, { backgroundColor: `${colors.primary}20` }]}
+                            onPress={handleAddMenu}
+                        >
+                            <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+                            <Text style={[styles.addButtonText, { color: colors.primary }]}>Ajouter un menu</Text>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Bouton de sauvegarde */}
@@ -547,7 +742,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         fontSize: 15,
-        minHeight: 100,
+        minHeight: 80,
+        textAlignVertical: "top",
+        paddingTop: 12,
     },
     addButton: {
         flexDirection: "row",
@@ -631,5 +828,69 @@ const styles = StyleSheet.create({
         fontSize: 12,
         textAlign: "center",
         marginBottom: 8,
+    },
+    helperText: {
+        fontSize: 12,
+        marginTop: 4,
+        fontStyle: "italic",
+    },
+    priceInputContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+    },
+    priceInput: {
+        flex: 1,
+        borderWidth: 1,
+        borderRadius: 10,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        fontSize: 15,
+    },
+    euroSymbol: {
+        fontSize: 18,
+        fontWeight: "600",
+    },
+    menuItem: {
+        marginBottom: 16,
+    },
+    menuHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 8,
+    },
+    menuNumber: {
+        fontSize: 16,
+        fontWeight: "600",
+    },
+    menuFields: {
+        flexDirection: "column",
+    },
+    menuField: {
+        marginBottom: 8,
+    },
+    menuImagePreview: {
+        width: "100%",
+        height: 150,
+        borderRadius: 8,
+    },
+    imagePlaceholder: {
+        width: "100%",
+        height: 150,
+        justifyContent: "center",
+        alignItems: "center",
+        borderRadius: 8,
+        borderWidth: 2,
+        borderStyle: "dashed",
+    },
+    imagePlaceholderText: {
+        marginTop: 8,
+        fontSize: 14,
+    },
+    imagePickerButton: {
+        borderRadius: 8,
+        borderWidth: 1,
+        overflow: "hidden",
     },
 })

@@ -215,10 +215,6 @@ export default function RestaurantDetailScreen() {
                         resizeMode="cover"
                     />
 
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color="#FFFFFF"/>
-                    </TouchableOpacity>
-
                     <TouchableOpacity onPress={handleToggleFavorite} style={styles.favoriteButton}>
                         <Ionicons name={isFav ? "heart" : "heart-outline"} size={24}
                                   color={isFav ? "#EF4444" : "#FFFFFF"}/>
@@ -319,10 +315,13 @@ export default function RestaurantDetailScreen() {
                                         </View>
 
                                         {/* Icône centrale */}
-                                        <View
-                                            style={[styles.menuIconContainer, {backgroundColor: `${colors.primary}15`}]}>
-                                            <Ionicons name="restaurant" size={40} color={colors.primary}/>
-                                        </View>
+                                        {item.image_url ? (
+                                            <Image source={{ uri: item.image_url }} style={styles.menuImage} resizeMode="cover" />
+                                        ) : (
+                                            <View style={[styles.menuImage, { backgroundColor: `${colors.primary}15` }]}>
+                                                <Ionicons name="restaurant" size={40} color={colors.primary} />
+                                            </View>
+                                        )}
 
                                         {/* Titre du menu */}
                                         <Text
@@ -455,14 +454,6 @@ const styles = StyleSheet.create({
     image: {
         width: "100%",
         height: 250,
-    },
-    backButton: {
-        position: "absolute",
-        top: 50,
-        left: 16,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        borderRadius: 20,
-        padding: 8,
     },
     favoriteButton: {
         position: "absolute",
@@ -609,7 +600,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: "700",
     },
-    menuIconContainer: {
+    menuImage: {
         width: 80,
         height: 80,
         borderRadius: 40,
