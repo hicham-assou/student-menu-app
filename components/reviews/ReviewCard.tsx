@@ -5,7 +5,7 @@ import type { Review } from "@/types"
 import { Colors } from "@/constants/Colors"
 import { deleteReview } from "@/lib/reviews"
 import { useAuth } from "@/contexts/AuthContext"
-import { CustomAlertManager } from "@/components/CustomAlert"
+import { CustomAlertManager } from "@/components/customAlert/CustomAlert"
 import {supabase} from "@/lib/supabase";
 
 interface ReviewCardProps {

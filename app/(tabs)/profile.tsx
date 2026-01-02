@@ -8,7 +8,7 @@ import {Button} from "@/components/ui/Button"
 import * as ImagePicker from "expo-image-picker"
 import {useState} from "react"
 import {supabase} from "@/lib/supabase"
-import {CustomAlertManager} from "@/components/CustomAlert"
+import {CustomAlertManager} from "@/components/customAlert/CustomAlert"
 
 const APP_VERSION = "1.0.0"
 

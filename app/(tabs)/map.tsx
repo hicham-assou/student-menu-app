@@ -10,7 +10,7 @@ import {Colors} from "@/constants/Colors"
 import {getRestaurants} from "@/lib/api"
 import {calculateDistance, formatDistance} from "@/lib/utils"
 import type {Restaurant} from "@/types"
-import {CustomAlertManager} from "@/components/CustomAlert"
+import {CustomAlertManager} from "@/components/customAlert/CustomAlert"
 
 const {width, height} = Dimensions.get("window")
 const ASPECT_RATIO = width / height

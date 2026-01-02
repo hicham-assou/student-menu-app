@@ -8,7 +8,7 @@ import { Colors } from "@/constants/Colors"
 import { useAuth } from "@/contexts/AuthContext"
 import { Input } from "@/components/ui/Input"
 import { Button } from "@/components/ui/Button"
-import { CustomAlertManager} from "@/components/CustomAlert";
+import { CustomAlertManager} from "@/components/customAlert/CustomAlert";
 
 export default function SignupScreen() {
     const colors = Colors.light

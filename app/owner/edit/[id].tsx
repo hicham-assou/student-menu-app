@@ -26,7 +26,7 @@ import type { Restaurant } from "@/types"
 import * as ImagePicker from "expo-image-picker"
 import { supabase } from "@/lib/supabase"
 import FormData from "form-data"
-import { CustomAlertManager } from "@/components/CustomAlert"
+import { CustomAlertManager } from "@/components/customAlert/CustomAlert"
 
 export default function EditRestaurantScreen() {
     const colorScheme = useColorScheme() ?? "light"
@@ -516,24 +516,6 @@ export default function EditRestaurantScreen() {
                                     {uploading ? "Upload en cours..." : image ? "Changer la photo" : "Ajouter une photo"}
                                 </Text>
                             </TouchableOpacity>
-
-                            <Text style={[styles.orText, { color: colors.textSecondary }]}>ou entrer une URL</Text>
-                            <TextInput
-                                style={[
-                                    styles.input,
-                                    {
-                                        backgroundColor: colors.surface,
-                                        color: colors.text,
-                                        borderColor: colors.border,
-                                    },
-                                ]}
-                                value={image}
-                                onChangeText={setImage}
-                                placeholder="https://exemple.com/image.jpg"
-                                placeholderTextColor={colors.textSecondary}
-                                keyboardType="url"
-                                autoCapitalize="none"
-                            />
                         </View>
 
                         <View style={styles.inputGroup}>
@@ -823,11 +805,6 @@ const styles = StyleSheet.create({
     changeImageText: {
         fontSize: 14,
         fontWeight: "600",
-    },
-    orText: {
-        fontSize: 12,
-        textAlign: "center",
-        marginBottom: 8,
     },
     helperText: {
         fontSize: 12,

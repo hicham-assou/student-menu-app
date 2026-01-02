@@ -6,7 +6,7 @@ import {Colors} from "@/constants/Colors"
 import {useAuth} from "@/contexts/AuthContext"
 import {useEffect, useState} from "react"
 import {supabase} from "@/lib/supabase"
-import {CustomAlertManager} from "@/components/CustomAlert"
+import {CustomAlertManager} from "@/components/customAlert/CustomAlert"
 
 interface Review {
     id: string

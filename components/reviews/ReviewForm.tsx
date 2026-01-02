@@ -5,7 +5,7 @@ import {Colors} from "@/constants/Colors"
 import {Button} from "@/components/ui/Button"
 import {upsertReview} from "@/lib/reviews"
 import type {Review} from "@/types"
-import {CustomAlertManager} from "@/components/CustomAlert";
+import {CustomAlertManager} from "@/components/customAlert/CustomAlert";
 
 interface ReviewFormProps {
     restaurantId: string

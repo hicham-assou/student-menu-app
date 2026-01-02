@@ -28,7 +28,7 @@ import { ReviewForm } from "@/components/reviews/ReviewForm"
 import { ReviewCard } from "@/components/reviews/ReviewCard"
 import { AuthModal } from "@/components/ui/AutoModal"
 import { useNavigation } from "expo-router"
-import { CustomAlertManager } from "@/components/CustomAlert"
+import { CustomAlertManager } from "@/components/customAlert/CustomAlert"
 import type { Restaurant, Review } from "@/types"
 
 const { width } = Dimensions.get("window")
