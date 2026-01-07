@@ -1,65 +1,79 @@
-import {StyleSheet, Text, TextInput, View, ViewStyle} from 'react-native'
-import {useColorScheme} from "@/components/useColorScheme.web";
-import {Colors} from '@/constants/Colors'
+import { useState } from "react"
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, type TextInputProps } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
+import { Colors } from "@/constants/Colors"
 
-interface InputProps {
-    placeholder?: string
-    value: string
-    onChangeText: (text: string) => void
+interface InputProps extends TextInputProps {
     label?: string
-    secureTextEntry?: boolean
-    style?: ViewStyle
+    error?: string
 }
 
-export function Input({
-                          placeholder,
-                          value,
-                          onChangeText,
-                          label,
-                          secureTextEntry = false,
-                          style,
-                      }: InputProps) {
-    const colorScheme = useColorScheme() ?? 'light'
-    const colors = Colors[colorScheme]
+export function Input({ label, error, secureTextEntry, style, ...props }: InputProps) {
+    const colors = Colors.light
+    const [showPassword, setShowPassword] = useState(false)
+    const isPasswordField = secureTextEntry
 
     return (
-        <View style={[styles.container, style]}>
-            {label && (
-                <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
-            )}
-            <TextInput
-                placeholder={placeholder}
-                placeholderTextColor={colors.textSecondary}
-                value={value}
-                onChangeText={onChangeText}
-                secureTextEntry={secureTextEntry}
-                style={[
-                    styles.input,
-                    {
-                        backgroundColor: colors.surface,
-                        borderColor: colors.border,
-                        color: colors.text,
-                    },
-                ]}
-            />
+        <View style={styles.container}>
+            {label && <Text style={[styles.label, { color: colors.text }]}>{label}</Text>}
+            <View style={styles.inputContainer}>
+                <TextInput
+                    style={[
+                        styles.input,
+                        {
+                            backgroundColor: colors.background,
+                            color: colors.text,
+                            borderColor: error ? colors.error : colors.border,
+                        },
+                        isPasswordField && styles.inputWithIcon,
+                        style,
+                    ]}
+                    placeholderTextColor={colors.textSecondary}
+                    secureTextEntry={isPasswordField && !showPassword}
+                    {...props}
+                />
+                {isPasswordField && (
+                    <TouchableOpacity style={styles.eyeButton} onPress={() => setShowPassword(!showPassword)}>
+                        <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={22} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                )}
+            </View>
+            {error && <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>}
         </View>
     )
 }
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: 16,
+        marginBottom: 4,
     },
     label: {
         fontSize: 14,
-        fontWeight: '500',
+        fontWeight: "600",
         marginBottom: 6,
     },
+    inputContainer: {
+        position: "relative",
+    },
     input: {
-        paddingVertical: 12,
+        height: 48,
+        borderRadius: 12,
         paddingHorizontal: 16,
-        borderRadius: 10,
+        fontSize: 15,
         borderWidth: 1,
-        fontSize: 16,
+    },
+    inputWithIcon: {
+        paddingRight: 48,
+    },
+    eyeButton: {
+        position: "absolute",
+        right: 12,
+        top: 0,
+        bottom: 0,
+        justifyContent: "center",
+    },
+    errorText: {
+        fontSize: 12,
+        marginTop: 4,
     },
 })
