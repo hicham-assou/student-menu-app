@@ -1,42 +1,34 @@
-import {ActivityIndicator, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View,} from "react-native"
-import {SafeAreaView} from "react-native-safe-area-context"
-import {useEffect, useRef, useState} from "react"
-import MapView, {Circle, Marker, PROVIDER_GOOGLE} from "react-native-maps"
-import * as Location from "expo-location"
-import {Ionicons} from "@expo/vector-icons"
-import {useRouter} from "expo-router"
-import {useColorScheme} from "@/components/useColorScheme.web"
-import {Colors} from "@/constants/Colors"
-import {getRestaurants} from "@/lib/api"
-import {calculateDistance, formatDistance} from "@/lib/utils"
-import type {Restaurant} from "@/types"
-import {CustomAlertManager} from "@/components/customAlert/CustomAlert"
+"use client"
 
-const {width, height} = Dimensions.get("window")
+import {
+    ActivityIndicator,
+    Dimensions,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { useEffect, useMemo, useRef, useState } from "react"
+import MapView, { Circle, Marker, PROVIDER_GOOGLE } from "react-native-maps"
+import * as Location from "expo-location"
+import { Ionicons } from "@expo/vector-icons"
+import { useRouter } from "expo-router"
+import { useColorScheme } from "@/components/useColorScheme.web"
+import { Colors } from "@/constants/Colors"
+import { getRestaurants } from "@/lib/api"
+import { calculateDistance, formatDistance } from "@/lib/utils"
+import type { Restaurant } from "@/types"
+import { CustomAlertManager } from "@/components/customAlert/CustomAlert"
+
+const { width, height } = Dimensions.get("window")
 const ASPECT_RATIO = width / height
 const LATITUDE_DELTA = 0.0922
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO
 
-const minimalistMapStyle = [
-    {
-        featureType: "poi",
-        elementType: "labels",
-        stylers: [{visibility: "off"}],
-    },
-    {
-        featureType: "poi.business",
-        stylers: [{visibility: "off"}],
-    },
-    {
-        featureType: "transit",
-        stylers: [{visibility: "off"}],
-    },
-    {
-        featureType: "road",
-        elementType: "labels.icon",
-        stylers: [{visibility: "off"}],
-    },
-]
+const minimalistMapStyle = []
 
 export default function MapScreen() {
     const colorScheme = useColorScheme() ?? "light"
@@ -78,10 +70,12 @@ export default function MapScreen() {
 
     const requestLocationPermission = async () => {
         try {
-            const {status} = await Location.requestForegroundPermissionsAsync()
+            const { status } = await Location.requestForegroundPermissionsAsync()
+
             if (status === "granted") {
                 setHasLocationPermission(true)
                 const location = await Location.getCurrentPositionAsync({})
+
                 setUserLocation({
                     latitude: location.coords.latitude,
                     longitude: location.coords.longitude,
@@ -104,18 +98,15 @@ export default function MapScreen() {
         if (!hasLocationPermission) {
             CustomAlertManager.alert(
                 "Localisation désactivée",
-                "Autorise la localisation pour centrer la carte sur ta position",
-                "warning",
-                [
-                    {text: "Annuler", style: "cancel"},
-                    {text: "Activer", onPress: requestLocationPermission},
-                ],
+                "Active la localisation dans les paramètres de ton téléphone pour centrer la carte sur ta position",
+                "info",
             )
             return
         }
 
         try {
             const location = await Location.getCurrentPositionAsync({})
+
             const newRegion = {
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
@@ -125,8 +116,21 @@ export default function MapScreen() {
             setUserLocation(newRegion)
             mapRef.current?.animateToRegion(newRegion)
         } catch (error) {
+            console.error("Error getting position:", error)
             CustomAlertManager.alert("Erreur", "Impossible de récupérer ta position", "error")
         }
+    }
+
+    const toggleRadiusFilter = () => {
+        if (!hasLocationPermission) {
+            CustomAlertManager.alert(
+                "Localisation désactivée",
+                "Active la localisation dans les paramètres de ton téléphone pour filtrer par rayon",
+                "info",
+            )
+            return
+        }
+        setShowRadius(!showRadius)
     }
 
     const filteredRestaurants = restaurants.filter((restaurant) => {
@@ -151,85 +155,71 @@ export default function MapScreen() {
         })
     }
 
-    const getMarkerColor = (restaurant: Restaurant) => {
-        if (!restaurant.student_menu || restaurant.student_menu.length === 0) {
-            return colors.primary
-        }
+    const markerColors = useMemo(() => {
+        const colorMap = new Map<string, string>()
 
-        const prices = restaurant.student_menu.map((item) =>
-            Number.parseFloat(item.price.replace("€", "").replace(",", ".")),
-        )
-        const minPrice = Math.min(...prices)
+        filteredRestaurants.forEach((restaurant) => {
+            if (!restaurant.student_menu || restaurant.student_menu.length === 0) {
+                colorMap.set(restaurant.id, colors.primary)
+                return
+            }
 
-        if (minPrice < 7) return "#10B981"
-        if (minPrice < 10) return "#F59E0B"
-        return "#EF4444"
-    }
+            const prices = restaurant.student_menu.map((item) =>
+                Number.parseFloat(item.price.replace("€", "").replace(",", ".")),
+            )
+            const minPrice = Math.min(...prices)
+
+            if (minPrice < 7) {
+                colorMap.set(restaurant.id, "#10B981")
+            } else if (minPrice < 10) {
+                colorMap.set(restaurant.id, "#F59E0B")
+            } else {
+                colorMap.set(restaurant.id, "#EF4444")
+            }
+        })
+
+        return colorMap
+    }, [filteredRestaurants, colors.primary])
 
     if (loading) {
         return (
-            <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
+            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={colors.primary}/>
-                    <Text style={[styles.loadingText, {color: colors.textSecondary}]}>Chargement de la carte...</Text>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Chargement de la carte...</Text>
                 </View>
             </SafeAreaView>
         )
     }
 
     return (
-        <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]} edges={["top"]}>
-            <View style={[styles.topBar, {backgroundColor: colors.background}]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: "#f5f5f5" }]} edges={["top"]}>
+            <View style={styles.topBar}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersContainer}>
                     <TouchableOpacity
-                        onPress={() => setShowRadius(!showRadius)}
-                        style={[
-                            styles.filterButton,
-                            {
-                                backgroundColor: showRadius ? colors.primary : colors.surface,
-                                borderColor: colors.border,
-                            },
-                        ]}
+                        onPress={toggleRadiusFilter}
+                        style={[styles.filterButton, showRadius && styles.filterButtonActive]}
                     >
-                        <Ionicons name="location" size={16} color={showRadius ? "#FFFFFF" : colors.text}/>
-                        <Text style={[styles.filterButtonText, {color: showRadius ? "#FFFFFF" : colors.text}]}>
+                        <Ionicons name="location" size={18} color={showRadius ? "#FFFFFF" : "#FF6B35"} />
+                        <Text style={[styles.filterButtonText, showRadius && styles.filterButtonTextActive]}>
                             {showRadius ? `${radiusKm}km` : "Rayon"}
                         </Text>
                     </TouchableOpacity>
 
                     {showRadius && (
                         <View style={styles.radiusControls}>
-                            <TouchableOpacity
-                                onPress={() => setRadiusKm(Math.max(1, radiusKm - 1))}
-                                style={[
-                                    styles.radiusButton,
-                                    {
-                                        backgroundColor: colors.surface,
-                                        borderColor: colors.border,
-                                    },
-                                ]}
-                            >
-                                <Ionicons name="remove" size={16} color={colors.text}/>
+                            <TouchableOpacity onPress={() => setRadiusKm(Math.max(1, radiusKm - 1))} style={styles.radiusButton}>
+                                <Ionicons name="remove" size={18} color="#333" />
                             </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => setRadiusKm(radiusKm + 1)}
-                                style={[
-                                    styles.radiusButton,
-                                    {
-                                        backgroundColor: colors.surface,
-                                        borderColor: colors.border,
-                                    },
-                                ]}
-                            >
-                                <Ionicons name="add" size={16} color={colors.text}/>
+                            <TouchableOpacity onPress={() => setRadiusKm(radiusKm + 1)} style={styles.radiusButton}>
+                                <Ionicons name="add" size={18} color="#333" />
                             </TouchableOpacity>
                         </View>
                     )}
 
-                    <View style={[styles.filterButton, {backgroundColor: colors.surface, borderColor: colors.border}]}>
-                        <Ionicons name="restaurant" size={16} color={colors.text}/>
-                        <Text
-                            style={[styles.filterButtonText, {color: colors.text}]}>{filteredRestaurants.length} restos</Text>
+                    <View style={styles.filterButton}>
+                        <Ionicons name="restaurant" size={18} color="#FF6B35" />
+                        <Text style={styles.filterButtonText}>{filteredRestaurants.length} restos</Text>
                     </View>
                 </ScrollView>
             </View>
@@ -241,7 +231,7 @@ export default function MapScreen() {
                 initialRegion={userLocation}
                 showsUserLocation={hasLocationPermission}
                 showsMyLocationButton={false}
-                customMapStyle={minimalistMapStyle}
+                userInterfaceStyle="light"
             >
                 {showRadius && hasLocationPermission && (
                     <Circle
@@ -264,42 +254,54 @@ export default function MapScreen() {
                             longitude: restaurant.longitude,
                         }}
                         onPress={() => handleMarkerPress(restaurant)}
-                        pinColor={getMarkerColor(restaurant)}
+                        pinColor={markerColors.get(restaurant.id)}
                     >
                         <View style={styles.customMarker}>
-                            <View style={[styles.markerCircle, {backgroundColor: getMarkerColor(restaurant)}]}>
-                                <Ionicons name="restaurant" size={16} color="#FFFFFF"/>
+                            <View style={[styles.markerCircle, { backgroundColor: markerColors.get(restaurant.id) }]}>
+                                <Ionicons name="restaurant" size={16} color="#FFFFFF" />
                             </View>
                         </View>
                     </Marker>
                 ))}
             </MapView>
 
-            <TouchableOpacity onPress={centerOnUser} style={[styles.locationButton, {backgroundColor: colors.surface}]}>
-                <Ionicons name="locate" size={24} color={colors.primary}/>
+            <TouchableOpacity onPress={centerOnUser} style={styles.locationButton}>
+                <View style={styles.locationButtonInner}>
+                    <Ionicons name="navigate" size={22} color="#FF6B35" />
+                </View>
             </TouchableOpacity>
 
             {selectedRestaurant && (
-                <View style={[styles.restaurantCard, {backgroundColor: colors.surface}]}>
+                <View style={styles.restaurantCard}>
                     {selectedRestaurant.image ? (
-                        <Image source={{uri: selectedRestaurant.image}} style={styles.cardImage} resizeMode="cover"/>
+                        <Image source={{ uri: selectedRestaurant.image }} style={styles.cardImage} resizeMode="cover" />
                     ) : (
-                        <View style={[styles.cardImagePlaceholder, {backgroundColor: `${colors.primary}20`}]}>
-                            <Ionicons name="restaurant" size={40} color={colors.primary}/>
+                        <View style={styles.cardImagePlaceholder}>
+                            <Ionicons name="restaurant" size={48} color="#FF6B35" />
+                        </View>
+                    )}
+
+                    {selectedRestaurant.student_menu && selectedRestaurant.student_menu.length > 0 && (
+                        <View style={styles.priceBadgeOverlay}>
+                            <Text style={styles.priceTextOverlay}>{selectedRestaurant.student_menu[0].price}</Text>
                         </View>
                     )}
 
                     <View style={styles.cardContent}>
                         <View style={styles.cardHeader}>
                             <View style={styles.cardInfo}>
-                                <Text style={[styles.cardTitle, {color: colors.text}]} numberOfLines={1}>
+                                <Text style={styles.cardTitle} numberOfLines={1}>
                                     {selectedRestaurant.name}
                                 </Text>
                                 <View style={styles.cardRow}>
-                                    <Ionicons name="location" size={14} color={colors.textSecondary}/>
-                                    <Text style={[styles.cardSubtitle, {color: colors.textSecondary}]}
-                                          numberOfLines={1}>
-                                        {selectedRestaurant.city} •{" "}
+                                    <View style={styles.iconCircle}>
+                                        <Ionicons name="location" size={12} color="#FF6B35" />
+                                    </View>
+                                    <Text style={styles.cardSubtitle} numberOfLines={1}>
+                                        {selectedRestaurant.city}
+                                    </Text>
+                                    <View style={styles.dotSeparator} />
+                                    <Text style={styles.cardDistance}>
                                         {formatDistance(
                                             calculateDistance(
                                                 userLocation.latitude,
@@ -310,41 +312,39 @@ export default function MapScreen() {
                                         )}
                                     </Text>
                                 </View>
-                                {selectedRestaurant.student_menu && selectedRestaurant.student_menu.length > 0 && (
-                                    <View style={[styles.priceBadge, {backgroundColor: colors.primary}]}>
-                                        <Text style={styles.priceText}>À partir
-                                            de {selectedRestaurant.student_menu[0].price}</Text>
-                                    </View>
-                                )}
                             </View>
                             <TouchableOpacity onPress={() => setSelectedRestaurant(null)} style={styles.closeButton}>
-                                <Ionicons name="close" size={24} color={colors.textSecondary}/>
+                                <Ionicons name="close-circle" size={28} color="#ddd" />
                             </TouchableOpacity>
                         </View>
 
                         <TouchableOpacity
                             onPress={() => router.push(`/restaurant/${selectedRestaurant?.id}`)}
-                            style={[styles.viewButton, {backgroundColor: colors.primary}]}
+                            style={styles.viewButton}
                         >
-                            <Text style={styles.viewButtonText}>Voir les détails</Text>
-                            <Ionicons name="arrow-forward" size={16} color="#FFFFFF"/>
+                            <Text style={styles.viewButtonText}>Voir le menu étudiant</Text>
+                            <View style={styles.arrowCircle}>
+                                <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
+                            </View>
                         </TouchableOpacity>
                     </View>
                 </View>
             )}
 
-            <View style={[styles.legend, {backgroundColor: colors.surface}]}>
+            <View style={styles.legend}>
                 <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, {backgroundColor: "#10B981"}]}/>
-                    <Text style={[styles.legendText, {color: colors.text}]}>{"< 7€"}</Text>
+                    <View style={[styles.legendDot, { backgroundColor: "#10B981" }]} />
+                    <Text style={styles.legendText}>{"< 7€"}</Text>
                 </View>
+                <View style={styles.legendSeparator} />
                 <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, {backgroundColor: "#F59E0B"}]}/>
-                    <Text style={[styles.legendText, {color: colors.text}]}>7-10€</Text>
+                    <View style={[styles.legendDot, { backgroundColor: "#F59E0B" }]} />
+                    <Text style={styles.legendText}>7-10€</Text>
                 </View>
+                <View style={styles.legendSeparator} />
                 <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, {backgroundColor: "#EF4444"}]}/>
-                    <Text style={[styles.legendText, {color: colors.text}]}>{">10€"}</Text>
+                    <View style={[styles.legendDot, { backgroundColor: "#EF4444" }]} />
+                    <Text style={styles.legendText}>{">10€"}</Text>
                 </View>
             </View>
         </SafeAreaView>
@@ -366,39 +366,59 @@ const styles = StyleSheet.create({
     },
     topBar: {
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingTop: 12,
+        paddingBottom: 16,
         zIndex: 10,
+        backgroundColor: "transparent",
     },
     filtersContainer: {
         flexDirection: "row",
-        gap: 8,
     },
     filterButton: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 6,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 20,
-        borderWidth: 1,
-        marginRight: 8,
+        gap: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 24,
+        backgroundColor: "#FFFFFF",
+        marginRight: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    filterButtonActive: {
+        backgroundColor: "#FF6B35",
+        shadowColor: "#FF6B35",
+        shadowOpacity: 0.3,
     },
     filterButtonText: {
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: "600",
+        color: "#333",
+    },
+    filterButtonTextActive: {
+        color: "#FFFFFF",
     },
     radiusControls: {
         flexDirection: "row",
         gap: 8,
     },
     radiusButton: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         justifyContent: "center",
         alignItems: "center",
-        borderWidth: 1,
-        marginRight: 8,
+        backgroundColor: "#FFFFFF",
+        marginRight: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 3,
     },
     map: {
         flex: 1,
@@ -415,7 +435,7 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: "#FFFFFF",
         shadowColor: "#000",
-        shadowOffset: {width: 0, height: 2},
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
         shadowRadius: 4,
         elevation: 5,
@@ -424,70 +444,121 @@ const styles = StyleSheet.create({
         position: "absolute",
         top: 200,
         right: 16,
-        width: 48,
-        height: 48,
-        borderRadius: 24,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: "#FFFFFF",
         justifyContent: "center",
         alignItems: "center",
         shadowColor: "#000",
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 5,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 12,
+        elevation: 6,
+    },
+    locationButtonInner: {
+        width: "100%",
+        height: "100%",
+        justifyContent: "center",
+        alignItems: "center",
     },
     restaurantCard: {
         position: "absolute",
-        bottom: 16,
+        bottom: 24,
         left: 16,
         right: 16,
-        borderRadius: 16,
+        backgroundColor: "#FFFFFF",
+        borderRadius: 24,
         overflow: "hidden",
         shadowColor: "#000",
-        shadowOffset: {width: 0, height: 4},
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.15,
+        shadowRadius: 24,
+        elevation: 12,
     },
     cardImage: {
         width: "100%",
-        height: 150,
+        height: 160,
     },
     cardImagePlaceholder: {
         width: "100%",
-        height: 150,
+        height: 160,
+        backgroundColor: "#FFF5F0",
         justifyContent: "center",
         alignItems: "center",
     },
+    priceBadgeOverlay: {
+        position: "absolute",
+        top: 12,
+        right: 12,
+        backgroundColor: "#FF6B35",
+        paddingHorizontal: 14,
+        paddingVertical: 7,
+        borderRadius: 20,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    priceTextOverlay: {
+        color: "#FFFFFF",
+        fontSize: 14,
+        fontWeight: "700",
+    },
     cardContent: {
-        padding: 16,
+        padding: 18,
     },
     cardHeader: {
         flexDirection: "row",
         justifyContent: "space-between",
-        marginBottom: 12,
+        marginBottom: 16,
     },
     cardInfo: {
         flex: 1,
-        gap: 6,
+        gap: 8,
     },
     cardTitle: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: "700",
+        color: "#1a1a1a",
+        letterSpacing: -0.3,
     },
     cardRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 4,
+        gap: 6,
+    },
+    iconCircle: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: "#FFF5F0",
+        justifyContent: "center",
+        alignItems: "center",
     },
     cardSubtitle: {
         fontSize: 13,
-        flex: 1,
+        color: "#666",
+        fontWeight: "500",
+    },
+    dotSeparator: {
+        width: 3,
+        height: 3,
+        borderRadius: 1.5,
+        backgroundColor: "#ccc",
+    },
+    cardDistance: {
+        fontSize: 13,
+        color: "#666",
+        fontWeight: "500",
     },
     priceBadge: {
         alignSelf: "flex-start",
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        borderRadius: 14,
+        marginTop: 2,
     },
     priceText: {
         color: "#FFFFFF",
@@ -495,48 +566,76 @@ const styles = StyleSheet.create({
         fontWeight: "600",
     },
     closeButton: {
-        padding: 4,
+        padding: 2,
+        marginLeft: 8,
     },
     viewButton: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        gap: 6,
-        paddingVertical: 12,
-        borderRadius: 10,
+        gap: 10,
+        paddingVertical: 14,
+        borderRadius: 16,
+        backgroundColor: "#FF6B35",
+        shadowColor: "#FF6B35",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
     },
     viewButtonText: {
         color: "#FFFFFF",
         fontSize: 15,
-        fontWeight: "600",
+        fontWeight: "700",
+    },
+    arrowCircle: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: "rgba(255, 255, 255, 0.25)",
+        justifyContent: "center",
+        alignItems: "center",
     },
     legend: {
         position: "absolute",
         top: 120,
         left: 16,
         flexDirection: "row",
+        alignItems: "center",
         gap: 12,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 20,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 24,
+        backgroundColor: "#FFFFFF",
         shadowColor: "#000",
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.15,
-        shadowRadius: 4,
-        elevation: 3,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 5,
     },
     legendItem: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 4,
+        gap: 6,
     },
     legendDot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 1,
     },
     legendText: {
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: "600",
+        color: "#333",
+    },
+    legendSeparator: {
+        width: 1,
+        height: 14,
+        backgroundColor: "#e0e0e0",
     },
 })
