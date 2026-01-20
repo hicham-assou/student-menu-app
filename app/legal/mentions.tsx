@@ -17,11 +17,10 @@ export default function MentionsScreen() {
 
                 <Text style={[styles.sectionTitle, {color: colors.text}]}>1. Éditeur de l'application</Text>
                 <Text style={[styles.paragraph, {color: colors.text}]}>
-                    Raison sociale : StudentFood SPRL{"\n"}
+                    Raison sociale : Stud'Table SPRL{"\n"}
                     Siège social : Avenue de la Couronne 123, 1050 Bruxelles, Belgique{"\n"}
                     Numéro d'entreprise : BE 0XXX.XXX.XXX{"\n"}
-                    Email : contact@studentfood.be{"\n"}
-                    Téléphone : +32 2 XXX XX XX
+                    Email : StudTable@outlook.com{"\n"}
                 </Text>
 
                 <Text style={[styles.sectionTitle, {color: colors.text}]}>2. Directeur de publication</Text>
@@ -49,9 +48,9 @@ export default function MentionsScreen() {
 
                 <Text style={[styles.sectionTitle, {color: colors.text}]}>4. Propriété intellectuelle</Text>
                 <Text style={[styles.paragraph, {color: colors.text}]}>
-                    L'ensemble du contenu de l'application StudentFood (textes, images, logos, icônes, code source) est
+                    L'ensemble du contenu de l'application Stud'Table (textes, images, logos, icônes, code source) est
                     la
-                    propriété exclusive de StudentFood SPRL, sauf mention contraire.{"\n\n"}
+                    propriété exclusive de Stud'Table SPRL, sauf mention contraire.{"\n\n"}
                     Toute reproduction, distribution, modification ou utilisation à des fins commerciales sans
                     autorisation
                     préalable est strictement interdite et constitue une contrefaçon sanctionnée par le Code de droit
@@ -66,15 +65,15 @@ export default function MentionsScreen() {
                     vous disposez d'un droit d'accès, de rectification, d'effacement et de portabilité de vos données
                     personnelles.{"\n\n"}
                     Pour exercer ces droits, contactez notre délégué à la protection des données :{"\n"}
-                    Email : dpo@studentfood.be
+                    Email : StudTable@outlook.com
                 </Text>
 
                 <Text style={[styles.sectionTitle, {color: colors.text}]}>6. Responsabilité</Text>
                 <Text style={[styles.paragraph, {color: colors.text}]}>
-                    StudentFood s'efforce de fournir des informations précises et à jour. Toutefois, nous ne
+                    Stud'Table s'efforce de fournir des informations précises et à jour. Toutefois, nous ne
                     garantissons pas
                     l'exactitude, l'exhaustivité ou la pertinence des informations diffusées.{"\n\n"}
-                    StudentFood ne peut être tenu responsable des erreurs, omissions, ou résultats obtenus par
+                    Stud'Table ne peut être tenu responsable des erreurs, omissions, ou résultats obtenus par
                     l'utilisation de
                     ces informations. Les informations sur les restaurants (menus, prix, horaires) sont fournies par les
                     établissements eux-mêmes.
@@ -82,7 +81,7 @@ export default function MentionsScreen() {
 
                 <Text style={[styles.sectionTitle, {color: colors.text}]}>7. Liens hypertextes</Text>
                 <Text style={[styles.paragraph, {color: colors.text}]}>
-                    L'application peut contenir des liens vers des sites externes. StudentFood n'exerce aucun contrôle
+                    L'application peut contenir des liens vers des sites externes. Stud'Table n'exerce aucun contrôle
                     sur ces
                     sites et décline toute responsabilité quant à leur contenu.
                 </Text>
@@ -91,34 +90,20 @@ export default function MentionsScreen() {
                 <Text style={[styles.paragraph, {color: colors.text}]}>
                     Les présentes mentions légales sont régies par le droit belge. Tout litige relatif à l'utilisation
                     de
-                    l'application StudentFood sera soumis à la compétence exclusive des tribunaux de Bruxelles.
+                    l'application Stud'Table sera soumis à la compétence exclusive des tribunaux de Bruxelles.
                 </Text>
 
                 <Text style={[styles.sectionTitle, {color: colors.text}]}>9. Contact</Text>
                 <TouchableOpacity
                     style={[styles.contactCard, {backgroundColor: colors.surface, borderColor: colors.border}]}
-                    onPress={() => Linking.openURL("mailto:contact@studentfood.be")}
+                    onPress={() => Linking.openURL("mailto:StudTable@outlook.com")}
                 >
                     <View style={[styles.iconContainer, {backgroundColor: `${colors.primary}20`}]}>
                         <Ionicons name="mail" size={24} color={colors.primary}/>
                     </View>
                     <View style={styles.contactInfo}>
                         <Text style={[styles.contactLabel, {color: colors.textSecondary}]}>Email</Text>
-                        <Text style={[styles.contactValue, {color: colors.text}]}>contact@studentfood.be</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary}/>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.contactCard, {backgroundColor: colors.surface, borderColor: colors.border}]}
-                    onPress={() => Linking.openURL("tel:+3222000000")}
-                >
-                    <View style={[styles.iconContainer, {backgroundColor: `${colors.primary}20`}]}>
-                        <Ionicons name="call" size={24} color={colors.primary}/>
-                    </View>
-                    <View style={styles.contactInfo}>
-                        <Text style={[styles.contactLabel, {color: colors.textSecondary}]}>Téléphone</Text>
-                        <Text style={[styles.contactValue, {color: colors.text}]}>+32 2 XXX XX XX</Text>
+                        <Text style={[styles.contactValue, {color: colors.text}]}>StudTable@outlook.com</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={20} color={colors.textSecondary}/>
                 </TouchableOpacity>

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "student-menu-app",
-    "slug": "student-menu-app",
+    "name": "stud'Table",
+    "slug": "studTable",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

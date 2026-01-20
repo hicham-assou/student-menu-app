@@ -16,7 +16,7 @@ interface OnboardingSlide {
 const slides: OnboardingSlide[] = [
     {
         id: "1",
-        title: "Bienvenue sur StudentFood",
+        title: "Bienvenue sur Stud'Table",
         description: "Découvre tous les restaurants près de toi qui proposent des menus étudiants à prix réduits !",
         icon: "restaurant",
         showLogo: true,

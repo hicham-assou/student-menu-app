@@ -470,9 +470,9 @@ export default function RestaurantStatsScreen() {
                         <View style={[styles.valueIconBox, { backgroundColor: `${colors.primary}15` }]}>
                             <Ionicons name="trophy" size={40} color={colors.primary} />
                         </View>
-                        <Text style={[styles.valueTitle, { color: colors.text }]}>Impact StudentFood</Text>
+                        <Text style={[styles.valueTitle, { color: colors.text }]}>Impact Stud'Table</Text>
                         <Text style={[styles.valueText, { color: colors.textSecondary }]}>
-                            Grâce à StudentFood, <Text style={{ fontWeight: "700" }}>{stats.uniqueUsers} étudiants</Text> ont
+                            Grâce à Stud'Table, <Text style={{ fontWeight: "700" }}>{stats.uniqueUsers} étudiants</Text> ont
                             découvert ton restaurant et <Text style={{ fontWeight: "700" }}>{stats.totalDirections}</Text> se sont
                             dirigés vers toi !
                         </Text>

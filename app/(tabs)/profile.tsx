@@ -8,7 +8,7 @@ import {Button} from "@/components/ui/Button"
 import * as ImagePicker from "expo-image-picker"
 import {useState} from "react"
 import {supabase} from "@/lib/supabase"
-import {CustomAlertManager} from "@/components/customAlert/CustomAlert"
+import {CustomAlertManager} from "@/components/customAlert/CustomAlert";
 
 const APP_VERSION = "1.0.0"
 
@@ -80,17 +80,103 @@ export default function ProfileScreen() {
         }
     }
 
+    const handleSignOut = () => {
+        CustomAlertManager.alert("Déconnexion", "Es-tu sûr de vouloir te déconnecter ?", "confirm", [
+            {
+                text: "Annuler",
+                style: "cancel",
+            },
+            {
+                text: "Me déconnecter",
+                onPress: signOut,
+                style: "destructive",
+            },
+        ])
+    }
+
+    const renderPublicSection = () => (
+        <>
+            <View style={styles.section}>
+                <Text style={[styles.sectionTitle, {color: Colors.light.textSecondary}]}>À PROPOS</Text>
+
+                <TouchableOpacity
+                    onPress={() => router.push("/legal/mentions")}
+                    style={[styles.menuItem, {backgroundColor: Colors.light.surface, borderColor: Colors.light.border}]}
+                >
+                    <View style={styles.menuItemLeft}>
+                        <View style={[styles.iconContainer, {backgroundColor: `${Colors.light.textSecondary}20`}]}>
+                            <Ionicons name="document-text" size={20} color={Colors.light.textSecondary}/>
+                        </View>
+                        <Text style={[styles.menuItemText, {color: Colors.light.text}]}>Mentions légales</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={Colors.light.textSecondary}/>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    onPress={() => router.push("/legal/terms")}
+                    style={[styles.menuItem, {backgroundColor: Colors.light.surface, borderColor: Colors.light.border}]}
+                >
+                    <View style={styles.menuItemLeft}>
+                        <View style={[styles.iconContainer, {backgroundColor: `${Colors.light.textSecondary}20`}]}>
+                            <Ionicons name="shield-checkmark" size={20} color={Colors.light.textSecondary}/>
+                        </View>
+                        <Text style={[styles.menuItemText, {color: Colors.light.text}]}>Conditions d'utilisation</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={Colors.light.textSecondary}/>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    onPress={() => router.push("/legal/privacy")}
+                    style={[styles.menuItem, {backgroundColor: Colors.light.surface, borderColor: Colors.light.border}]}
+                >
+                    <View style={styles.menuItemLeft}>
+                        <View style={[styles.iconContainer, {backgroundColor: `${Colors.light.textSecondary}20`}]}>
+                            <Ionicons name="lock-closed" size={20} color={Colors.light.textSecondary}/>
+                        </View>
+                        <Text style={[styles.menuItemText, {color: Colors.light.text}]}>Politique de
+                            confidentialité</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={Colors.light.textSecondary}/>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    onPress={() => router.push("/legal/help")}
+                    style={[styles.menuItem, {backgroundColor: Colors.light.surface, borderColor: Colors.light.border}]}
+                >
+                    <View style={styles.menuItemLeft}>
+                        <View style={[styles.iconContainer, {backgroundColor: `${Colors.light.textSecondary}20`}]}>
+                            <Ionicons name="help-circle" size={20} color={Colors.light.textSecondary}/>
+                        </View>
+                        <Text style={[styles.menuItemText, {color: Colors.light.text}]}>Aide & Support</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={Colors.light.textSecondary}/>
+                </TouchableOpacity>
+            </View>
+
+            <View style={styles.versionContainer}>
+                <Text style={[styles.versionText, {color: Colors.light.textSecondary}]}>Version {APP_VERSION}</Text>
+            </View>
+        </>
+    )
+
     if (!user) {
         return (
             <SafeAreaView style={[styles.container, {backgroundColor: Colors.light.background}]}>
-                <View style={styles.emptyContainer}>
-                    <Ionicons name="person-circle-outline" size={80} color={Colors.light.textSecondary}/>
-                    <Text style={[styles.emptyTitle, {color: Colors.light.text}]}>Non connecté</Text>
-                    <Text style={[styles.emptySubtitle, {color: Colors.light.textSecondary}]}>
-                        Connecte-toi pour accéder à ton profil
-                    </Text>
-                    <Button title="Se connecter" onPress={() => router.push("/auth/login")} style={styles.button}/>
-                </View>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <View style={styles.content}>
+                        <View style={styles.notLoggedInHeader}>
+                            <Ionicons name="person-circle-outline" size={80} color={Colors.light.textSecondary}/>
+                            <Text style={[styles.notLoggedInTitle, {color: Colors.light.text}]}>Non connecté</Text>
+                            <Text style={[styles.notLoggedInSubtitle, {color: Colors.light.textSecondary}]}>
+                                Connecte-toi pour accéder à ton profil
+                            </Text>
+                            <Button title="Se connecter" onPress={() => router.push("/auth/login")}
+                                    style={styles.loginButton}/>
+                        </View>
+
+                        {renderPublicSection()}
+                    </View>
+                </ScrollView>
             </SafeAreaView>
         )
     }
@@ -183,7 +269,7 @@ export default function ProfileScreen() {
                         >
                             <View style={styles.menuItemLeft}>
                                 <View style={[styles.iconContainer, {backgroundColor: "#FEF3C720"}]}>
-                                    <Ionicons name="star" size={20} color="#F59E0B"/>
+                                    <Ionicons name="star" size={20} color={Colors.light.primary}/>
                                 </View>
                                 <Text style={[styles.menuItemText, {color: Colors.light.text}]}>Mes avis</Text>
                             </View>
@@ -192,10 +278,10 @@ export default function ProfileScreen() {
                     </View>
 
                     {/* Paramètres */}
-                    <View style={styles.section}>
-                        {/*<Text style={[styles.sectionTitle, { color: Colors.light.textSecondary }]}>PARAMÈTRES</Text>
+                    {/*<View style={styles.section}>
+                        <Text style={[styles.sectionTitle, {color: Colors.light.textSecondary}]}>PARAMÈTRES</Text>
 
-                        <TouchableOpacity
+                         <TouchableOpacity
               onPress={() => router.push("/profile/notifications")}
               style={[styles.menuItem, { backgroundColor: Colors.light.surface, borderColor: Colors.light.border }]}
             >
@@ -206,90 +292,13 @@ export default function ProfileScreen() {
                 <Text style={[styles.menuItemText, { color: Colors.light.text }]}>Notifications</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={Colors.light.textSecondary} />
-            </TouchableOpacity> */}
-                    </View>
+            </TouchableOpacity>
+                    </View>*/}
 
-                    <View style={styles.section}>
-                        <Text style={[styles.sectionTitle, {color: Colors.light.textSecondary}]}>À PROPOS</Text>
-
-                        <TouchableOpacity
-                            onPress={() => router.push("/legal/mentions")}
-                            style={[styles.menuItem, {
-                                backgroundColor: Colors.light.surface,
-                                borderColor: Colors.light.border
-                            }]}
-                        >
-                            <View style={styles.menuItemLeft}>
-                                <View
-                                    style={[styles.iconContainer, {backgroundColor: `${Colors.light.textSecondary}20`}]}>
-                                    <Ionicons name="document-text" size={20} color={Colors.light.textSecondary}/>
-                                </View>
-                                <Text style={[styles.menuItemText, {color: Colors.light.text}]}>Mentions légales</Text>
-                            </View>
-                            <Ionicons name="chevron-forward" size={20} color={Colors.light.textSecondary}/>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            onPress={() => router.push("/legal/terms")}
-                            style={[styles.menuItem, {
-                                backgroundColor: Colors.light.surface,
-                                borderColor: Colors.light.border
-                            }]}
-                        >
-                            <View style={styles.menuItemLeft}>
-                                <View
-                                    style={[styles.iconContainer, {backgroundColor: `${Colors.light.textSecondary}20`}]}>
-                                    <Ionicons name="shield-checkmark" size={20} color={Colors.light.textSecondary}/>
-                                </View>
-                                <Text style={[styles.menuItemText, {color: Colors.light.text}]}>Conditions
-                                    d'utilisation</Text>
-                            </View>
-                            <Ionicons name="chevron-forward" size={20} color={Colors.light.textSecondary}/>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            onPress={() => router.push("/legal/privacy")}
-                            style={[styles.menuItem, {
-                                backgroundColor: Colors.light.surface,
-                                borderColor: Colors.light.border
-                            }]}
-                        >
-                            <View style={styles.menuItemLeft}>
-                                <View
-                                    style={[styles.iconContainer, {backgroundColor: `${Colors.light.textSecondary}20`}]}>
-                                    <Ionicons name="lock-closed" size={20} color={Colors.light.textSecondary}/>
-                                </View>
-                                <Text style={[styles.menuItemText, {color: Colors.light.text}]}>Politique de
-                                    confidentialité</Text>
-                            </View>
-                            <Ionicons name="chevron-forward" size={20} color={Colors.light.textSecondary}/>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            onPress={() => router.push("/legal/help")}
-                            style={[styles.menuItem, {
-                                backgroundColor: Colors.light.surface,
-                                borderColor: Colors.light.border
-                            }]}
-                        >
-                            <View style={styles.menuItemLeft}>
-                                <View
-                                    style={[styles.iconContainer, {backgroundColor: `${Colors.light.textSecondary}20`}]}>
-                                    <Ionicons name="help-circle" size={20} color={Colors.light.textSecondary}/>
-                                </View>
-                                <Text style={[styles.menuItemText, {color: Colors.light.text}]}>Aide & Support</Text>
-                            </View>
-                            <Ionicons name="chevron-forward" size={20} color={Colors.light.textSecondary}/>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.versionContainer}>
-                        <Text
-                            style={[styles.versionText, {color: Colors.light.textSecondary}]}>Version {APP_VERSION}</Text>
-                    </View>
+                    {renderPublicSection()}
 
                     {/* Déconnexion */}
-                    <TouchableOpacity onPress={signOut} style={[styles.signOutButton, {borderColor: "#EF4444"}]}>
+                    <TouchableOpacity onPress={handleSignOut} style={[styles.signOutButton, {borderColor: "#EF4444"}]}>
                         <Ionicons name="log-out-outline" size={20} color="#EF4444"/>
                         <Text style={styles.signOutText}>Se déconnecter</Text>
                     </TouchableOpacity>
@@ -445,5 +454,26 @@ const styles = StyleSheet.create({
         alignItems: "center",
         borderWidth: 3,
         borderColor: "#FFFFFF",
+    },
+    notLoggedInHeader: {
+        alignItems: "center",
+        paddingVertical: 40,
+        paddingHorizontal: 20,
+        gap: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.light.border,
+        marginBottom: 32,
+    },
+    notLoggedInTitle: {
+        fontSize: 20,
+        fontWeight: "600",
+    },
+    notLoggedInSubtitle: {
+        fontSize: 15,
+        textAlign: "center",
+        marginBottom: 12,
+    },
+    loginButton: {
+        minWidth: 200,
     },
 })

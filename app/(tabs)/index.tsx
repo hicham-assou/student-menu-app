@@ -60,7 +60,7 @@ export default function HomeScreen() {
             <View style={styles.header}>
                 <View style={styles.titleContainer}>
                     <Image source={require("@/assets/images/logo.png")} style={styles.logo} resizeMode="contain"/>
-                    <Text style={[styles.title, {color: colors.text}]}>Student Food</Text>
+                    <Text style={[styles.title, {color: colors.text}]}>Stud'Table</Text>
                 </View>
             </View>
 

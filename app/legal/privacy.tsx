@@ -13,10 +13,10 @@ export default function PrivacyScreen() {
             <Stack.Screen options={{title: "Politique de confidentialité", headerBackTitle: "Retour"}}/>
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 <Text style={[styles.title, {color: colors.text}]}>Politique de Confidentialité</Text>
-                <Text style={[styles.date, {color: colors.textSecondary}]}>Dernière mise à jour : Décembre 2024</Text>
+                <Text style={[styles.date, {color: colors.textSecondary}]}>Dernière mise à jour : Janvier 2026</Text>
 
                 <Text style={[styles.paragraph, {color: colors.text}]}>
-                    Chez StudentFood, nous prenons très au sérieux la protection de vos données personnelles. Cette
+                    Chez Stud'Table, nous prenons très au sérieux la protection de vos données personnelles. Cette
                     politique de
                     confidentialité explique comment nous collectons, utilisons et protégeons vos informations.
                 </Text>
@@ -138,8 +138,7 @@ export default function PrivacyScreen() {
                 <Text style={[styles.paragraph, {color: colors.text}]}>
                     Pour toute question concernant cette politique ou pour exercer vos droits, contactez-nous à :
                 </Text>
-                <Text style={[styles.bulletPoint, {color: colors.text}]}>Email : privacy@studentfood.com</Text>
-                <Text style={[styles.bulletPoint, {color: colors.text}]}>DPO : dpo@studentfood.com</Text>
+                <Text style={[styles.bulletPoint, {color: colors.text}]}>Email : StudTable@outlook.com</Text>
 
                 <View style={styles.footer}/>
             </ScrollView>

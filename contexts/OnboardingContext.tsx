@@ -8,7 +8,7 @@ interface OnboardingContextType {
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined)
 
-const ONBOARDING_KEY = "@studentfood_has_seen_onboarding"
+const ONBOARDING_KEY = "@studTable_has_seen_onboarding"
 
 export function OnboardingProvider({children}: { children: ReactNode }) {
     const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null)

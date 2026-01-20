@@ -17,7 +17,7 @@ export default function TermsScreen() {
 
                 <Text style={[styles.sectionTitle, {color: colors.text}]}>1. Acceptation des conditions</Text>
                 <Text style={[styles.paragraph, {color: colors.text}]}>
-                    En accédant et en utilisant l'application StudentFood, vous acceptez d'être lié par les présentes
+                    En accédant et en utilisant l'application Stud'Table, vous acceptez d'être lié par les présentes
                     conditions
                     générales d'utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser notre
                     application.
@@ -25,7 +25,7 @@ export default function TermsScreen() {
 
                 <Text style={[styles.sectionTitle, {color: colors.text}]}>2. Description du service</Text>
                 <Text style={[styles.paragraph, {color: colors.text}]}>
-                    StudentFood est une plateforme mobile qui connecte les étudiants avec des restaurants proposant des
+                    Stud'Table est une plateforme mobile qui connecte les étudiants avec des restaurants proposant des
                     menus
                     étudiants. L'application permet de découvrir, consulter et localiser des établissements de
                     restauration
@@ -53,12 +53,12 @@ export default function TermsScreen() {
                     • Ne pas publier de contenu offensant, diffamatoire ou inapproprié
                 </Text>
                 <Text style={[styles.bulletPoint, {color: colors.text}]}>
-                    • Respecter les droits de propriété intellectuelle de StudentFood et des tiers
+                    • Respecter les droits de propriété intellectuelle de Stud'Table et des tiers
                 </Text>
 
                 <Text style={[styles.sectionTitle, {color: colors.text}]}>5. Contenu utilisateur</Text>
                 <Text style={[styles.paragraph, {color: colors.text}]}>
-                    En publiant du contenu sur StudentFood (avis, photos, commentaires), vous accordez à StudentFood une
+                    En publiant du contenu sur Stud'Table (avis, photos, commentaires), vous accordez à Stud'Table une
                     licence
                     mondiale, non exclusive, libre de redevance pour utiliser, reproduire et afficher ce contenu dans le
                     cadre du
@@ -67,7 +67,7 @@ export default function TermsScreen() {
 
                 <Text style={[styles.sectionTitle, {color: colors.text}]}>6. Restaurants partenaires</Text>
                 <Text style={[styles.paragraph, {color: colors.text}]}>
-                    StudentFood agit comme intermédiaire entre les étudiants et les restaurants. Nous ne sommes pas
+                    Stud'Table agit comme intermédiaire entre les étudiants et les restaurants. Nous ne sommes pas
                     responsables
                     de la qualité des services, de la nourriture ou des prix pratiqués par les restaurants. Les offres
                     et menus
@@ -76,9 +76,9 @@ export default function TermsScreen() {
 
                 <Text style={[styles.sectionTitle, {color: colors.text}]}>7. Limitation de responsabilité</Text>
                 <Text style={[styles.paragraph, {color: colors.text}]}>
-                    StudentFood est fourni "tel quel" sans garantie d'aucune sorte. Nous ne garantissons pas que le
+                    Stud'Table est fourni "tel quel" sans garantie d'aucune sorte. Nous ne garantissons pas que le
                     service sera
-                    ininterrompu, sécurisé ou exempt d'erreurs. En aucun cas, StudentFood ne sera responsable de
+                    ininterrompu, sécurisé ou exempt d'erreurs. En aucun cas, Stud'Table ne sera responsable de
                     dommages directs,
                     indirects, accessoires ou consécutifs résultant de votre utilisation du service.
                 </Text>
@@ -87,14 +87,14 @@ export default function TermsScreen() {
                 <Text style={[styles.paragraph, {color: colors.text}]}>
                     Nous nous réservons le droit de modifier ces conditions à tout moment. Les modifications seront
                     effectives dès
-                    leur publication dans l'application. Votre utilisation continue de StudentFood après ces
+                    leur publication dans l'application. Votre utilisation continue de Stud'Table après ces
                     modifications
                     constitue votre acceptation des nouvelles conditions.
                 </Text>
 
                 <Text style={[styles.sectionTitle, {color: colors.text}]}>9. Résiliation</Text>
                 <Text style={[styles.paragraph, {color: colors.text}]}>
-                    Nous pouvons suspendre ou résilier votre accès à StudentFood à tout moment, sans préavis, en cas de
+                    Nous pouvons suspendre ou résilier votre accès à Stud'Table à tout moment, sans préavis, en cas de
                     violation
                     de ces conditions ou pour toute autre raison jugée nécessaire.
                 </Text>
@@ -102,7 +102,7 @@ export default function TermsScreen() {
                 <Text style={[styles.sectionTitle, {color: colors.text}]}>10. Contact</Text>
                 <Text style={[styles.paragraph, {color: colors.text}]}>
                     Pour toute question concernant ces conditions d'utilisation, veuillez nous contacter à :
-                    legal@studentfood.com
+                    StudTable@outlook.com
                 </Text>
 
                 <View style={styles.footer}/>
