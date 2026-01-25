@@ -2,6 +2,7 @@
   "expo": {
     "name": "stud'Table",
     "slug": "studTable",
+    "scheme": "stud'Table",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -13,17 +14,40 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.studentfood.app",
+      "config": {
+        "googleMapsApiKey": "REMPLACE_PAR_TA_CLE_API_GOOGLE_MAPS"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Stud'Table utilise ta position pour trouver les restaurants près de toi.",
+        "NSLocationAlwaysUsageDescription": "Stud'Table utilise ta position pour trouver les restaurants près de toi.",
+        "NSCameraUsageDescription": "Stud'Table utilise la caméra pour prendre des photos.",
+        "NSPhotoLibraryUsageDescription": "Stud'Table accède à ta galerie pour choisir des photos de profil ou de restaurant."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "package": "com.hicham_assou.studentmenuapp"
+      "package": "com.Studentfood.app",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyA2na40LOljWpMYj0pDzL2AAY9jg2F6p0M"
+        }
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -32,17 +56,19 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font",
-      "expo-web-browser"
-    ],
-    "experiments": {
-      "typedRoutes": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "00580ca2-31d7-468d-b731-503f682fecef"
-      }
-    }
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Stud'Table utilise ta position pour trouver les restaurants près de toi."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Stud'Table accède à ta galerie pour choisir des photos de profil ou de restaurant.",
+          "cameraPermission": "Stud'Table utilise la caméra pour prendre des photos."
+        }
+      ]
+    ]
   }
 }

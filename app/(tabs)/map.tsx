@@ -1,5 +1,3 @@
-"use client"
-
 import {
     ActivityIndicator,
     Dimensions,
@@ -12,23 +10,21 @@ import {
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useEffect, useMemo, useRef, useState } from "react"
-import MapView, { Circle, Marker, PROVIDER_GOOGLE } from "react-native-maps"
+import MapView, { Circle, Marker } from "react-native-maps"
 import * as Location from "expo-location"
 import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
-import { useColorScheme } from "@/components/useColorScheme.web"
 import { Colors } from "@/constants/Colors"
 import { getRestaurants } from "@/lib/api"
 import { calculateDistance, formatDistance } from "@/lib/utils"
 import type { Restaurant } from "@/types"
-import { CustomAlertManager } from "@/components/customAlert/CustomAlert"
+import { CustomAlertManager} from "@/components/customAlert/CustomAlert";
+import {useColorScheme} from "@/components/useColorScheme";
 
 const { width, height } = Dimensions.get("window")
 const ASPECT_RATIO = width / height
 const LATITUDE_DELTA = 0.0922
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO
-
-const minimalistMapStyle = []
 
 export default function MapScreen() {
     const colorScheme = useColorScheme() ?? "light"
@@ -226,7 +222,6 @@ export default function MapScreen() {
 
             <MapView
                 ref={mapRef}
-                provider={PROVIDER_GOOGLE}
                 style={styles.map}
                 initialRegion={userLocation}
                 showsUserLocation={hasLocationPermission}
