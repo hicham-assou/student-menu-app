@@ -27,8 +27,7 @@ const LATITUDE_DELTA = 0.0922
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO
 
 export default function MapScreen() {
-    const colorScheme = useColorScheme() ?? "light"
-    const colors = Colors[colorScheme]
+    const colors = Colors.light
     const router = useRouter()
     const mapRef = useRef<MapView>(null)
 
@@ -66,24 +65,52 @@ export default function MapScreen() {
 
     const requestLocationPermission = async () => {
         try {
+            // Verifier si les services de localisation sont actives
+            const servicesEnabled = await Location.hasServicesEnabledAsync()
+            if (!servicesEnabled) {
+                setHasLocationPermission(false)
+                return
+            }
+
             const { status } = await Location.requestForegroundPermissionsAsync()
 
             if (status === "granted") {
                 setHasLocationPermission(true)
-                const location = await Location.getCurrentPositionAsync({})
+                try {
+                    const location = await Location.getCurrentPositionAsync({
+                        accuracy: Location.Accuracy.Balanced,
+                    })
 
-                setUserLocation({
-                    latitude: location.coords.latitude,
-                    longitude: location.coords.longitude,
-                    latitudeDelta: LATITUDE_DELTA,
-                    longitudeDelta: LONGITUDE_DELTA,
-                })
-                mapRef.current?.animateToRegion({
-                    latitude: location.coords.latitude,
-                    longitude: location.coords.longitude,
-                    latitudeDelta: LATITUDE_DELTA,
-                    longitudeDelta: LONGITUDE_DELTA,
-                })
+                    setUserLocation({
+                        latitude: location.coords.latitude,
+                        longitude: location.coords.longitude,
+                        latitudeDelta: LATITUDE_DELTA,
+                        longitudeDelta: LONGITUDE_DELTA,
+                    })
+                    mapRef.current?.animateToRegion({
+                        latitude: location.coords.latitude,
+                        longitude: location.coords.longitude,
+                        latitudeDelta: LATITUDE_DELTA,
+                        longitudeDelta: LONGITUDE_DELTA,
+                    })
+                } catch {
+                    // Si getCurrentPosition echoue, essayer getLastKnownPosition
+                    const lastKnown = await Location.getLastKnownPositionAsync()
+                    if (lastKnown) {
+                        setUserLocation({
+                            latitude: lastKnown.coords.latitude,
+                            longitude: lastKnown.coords.longitude,
+                            latitudeDelta: LATITUDE_DELTA,
+                            longitudeDelta: LONGITUDE_DELTA,
+                        })
+                        mapRef.current?.animateToRegion({
+                            latitude: lastKnown.coords.latitude,
+                            longitude: lastKnown.coords.longitude,
+                            latitudeDelta: LATITUDE_DELTA,
+                            longitudeDelta: LONGITUDE_DELTA,
+                        })
+                    }
+                }
             }
         } catch (error) {
             console.error("Error requesting location permission:", error)
@@ -91,17 +118,35 @@ export default function MapScreen() {
     }
 
     const centerOnUser = async () => {
-        if (!hasLocationPermission) {
+        // Verifier si les services de localisation sont actives
+        const servicesEnabled = await Location.hasServicesEnabledAsync()
+        if (!servicesEnabled) {
             CustomAlertManager.alert(
                 "Localisation désactivée",
-                "Active la localisation dans les paramètres de ton téléphone pour centrer la carte sur ta position",
+                "Active la localisation dans les paramètres de ton téléphone pour centrer la carte sur ta position.",
                 "info",
             )
             return
         }
 
+        if (!hasLocationPermission) {
+            // Redemander la permission
+            const { status } = await Location.requestForegroundPermissionsAsync()
+            if (status !== "granted") {
+                CustomAlertManager.alert(
+                    "Permission refusée",
+                    "Autorise l'accès à ta position dans les paramètres de ton téléphone.",
+                    "info",
+                )
+                return
+            }
+            setHasLocationPermission(true)
+        }
+
         try {
-            const location = await Location.getCurrentPositionAsync({})
+            const location = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced,
+            })
 
             const newRegion = {
                 latitude: location.coords.latitude,
@@ -111,17 +156,30 @@ export default function MapScreen() {
             }
             setUserLocation(newRegion)
             mapRef.current?.animateToRegion(newRegion)
-        } catch (error) {
-            console.error("Error getting position:", error)
-            CustomAlertManager.alert("Erreur", "Impossible de récupérer ta position", "error")
+        } catch {
+            // Fallback sur la derniere position connue
+            const lastKnown = await Location.getLastKnownPositionAsync()
+            if (lastKnown) {
+                const newRegion = {
+                    latitude: lastKnown.coords.latitude,
+                    longitude: lastKnown.coords.longitude,
+                    latitudeDelta: LATITUDE_DELTA,
+                    longitudeDelta: LONGITUDE_DELTA,
+                }
+                setUserLocation(newRegion)
+                mapRef.current?.animateToRegion(newRegion)
+            } else {
+                CustomAlertManager.alert("Erreur", "Impossible de récupérer ta position. Vérifie que ta localisation est bien activée.", "error")
+            }
         }
     }
 
-    const toggleRadiusFilter = () => {
-        if (!hasLocationPermission) {
+    const toggleRadiusFilter = async () => {
+        const servicesEnabled = await Location.hasServicesEnabledAsync()
+        if (!servicesEnabled || !hasLocationPermission) {
             CustomAlertManager.alert(
-                "Localisation désactivée",
-                "Active la localisation dans les paramètres de ton téléphone pour filtrer par rayon",
+                "Localisation requise",
+                "Active la localisation dans les paramètres de ton téléphone pour filtrer par rayon.",
                 "info",
             )
             return
