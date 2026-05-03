@@ -1,18 +1,18 @@
-import {useState} from "react"
-import {FlatList, Image, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View} from "react-native"
-import {Ionicons} from "@expo/vector-icons"
-import {Colors} from "@/constants/Colors"
-import {SafeAreaView} from "react-native-safe-area-context"
-import {useRestaurants} from "@/hooks/useRestaurant"
-import {RestaurantCard} from "@/components/restaurant/RestaurantCard"
-import type {Restaurant} from "@/types"
+import { useState } from "react"
+import { FlatList, Image, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
+import { Colors } from "@/constants/Colors"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { useRestaurants } from "@/hooks/useRestaurant"
+import { RestaurantCard } from "@/components/restaurant/RestaurantCard"
+import type { Restaurant } from "@/types"
 
 export default function HomeScreen() {
     const colors = Colors.light
     const [search, setSearch] = useState("")
     const [priceSort, setPriceSort] = useState<"asc" | "desc" | null>(null)
 
-    const {restaurants, loading, error, refresh, toggleFavorite, isFavorite} = useRestaurants()
+    const { restaurants, loading, error, refresh, toggleFavorite, isFavorite } = useRestaurants()
 
     const togglePriceSort = () => {
         if (priceSort === null) {
@@ -56,28 +56,28 @@ export default function HomeScreen() {
         : filteredRestaurants
 
     return (
-        <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
             <View style={styles.header}>
                 <View style={styles.titleContainer}>
-                    <Image source={require("@/assets/images/logo.png")} style={styles.logo} resizeMode="contain"/>
-                    <Text style={[styles.title, {color: colors.text}]}>Stud'Table</Text>
+                    <Image source={require("@/assets/images/logo.png")} style={styles.logo} resizeMode="contain" />
+                    <Text style={[styles.title, { color: colors.text }]}>Stud'Table</Text>
                 </View>
             </View>
 
             <View style={styles.searchRow}>
                 <View style={styles.searchContainer}>
-                    <Ionicons name="search" size={17} color="#94A3B8"/>
+                    <Ionicons name="search" size={17} color="#94A3B8" />
                     <TextInput
                         placeholder="Restaurant ou ville..."
                         placeholderTextColor="#94A3B8"
                         value={search}
                         onChangeText={setSearch}
-                        style={[styles.searchInput, {color: colors.text}]}
+                        style={[styles.searchInput, { color: colors.text }]}
                         returnKeyType="search"
                     />
                     {search.length > 0 && (
                         <TouchableOpacity onPress={() => setSearch("")} hitSlop={10}>
-                            <Ionicons name="close-circle" size={17} color="#CBD5E1"/>
+                            <Ionicons name="close-circle" size={17} color="#CBD5E1" />
                         </TouchableOpacity>
                     )}
                 </View>
@@ -85,7 +85,7 @@ export default function HomeScreen() {
                 <TouchableOpacity
                     style={[
                         styles.sortButton,
-                        priceSort && {backgroundColor: colors.primary},
+                        priceSort && { backgroundColor: colors.primary },
                     ]}
                     onPress={togglePriceSort}
                     activeOpacity={0.8}
@@ -94,7 +94,7 @@ export default function HomeScreen() {
                     <Text
                         style={[
                             styles.sortButtonText,
-                            {color: priceSort ? "#FFFFFF" : colors.text},
+                            { color: priceSort ? "#FFFFFF" : colors.text },
                         ]}
                     >
                         €
@@ -115,7 +115,7 @@ export default function HomeScreen() {
 
             {search.length > 0 && (
                 <View style={styles.resultsContainer}>
-                    <Text style={[styles.resultsText, {color: colors.textSecondary}]}>
+                    <Text style={[styles.resultsText, { color: colors.textSecondary }]}>
                         {sortedRestaurants.length} résultat{sortedRestaurants.length > 1 ? "s" : ""}
                     </Text>
                 </View>
@@ -130,7 +130,7 @@ export default function HomeScreen() {
             <FlatList
                 data={sortedRestaurants}
                 keyExtractor={(item) => item.id}
-                renderItem={({item}) => (
+                renderItem={({ item }) => (
                     <RestaurantCard
                         restaurant={item}
                         isFavorite={isFavorite(item.id)}
@@ -150,9 +150,9 @@ export default function HomeScreen() {
                 ListEmptyComponent={
                     !loading ? (
                         <View style={styles.emptyContainer}>
-                            <Ionicons name="restaurant-outline" size={64} color={colors.textSecondary}/>
-                            <Text style={[styles.emptyText, {color: colors.text}]}>Aucun restaurant trouvé</Text>
-                            <Text style={[styles.emptySubtext, {color: colors.textSecondary}]}>
+                            <Ionicons name="restaurant-outline" size={64} color={colors.textSecondary} />
+                            <Text style={[styles.emptyText, { color: colors.text }]}>Aucun restaurant trouvé</Text>
+                            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
                                 {search ? "Essaie une autre recherche" : ""}
                             </Text>
                         </View>
