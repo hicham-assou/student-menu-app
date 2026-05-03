@@ -65,18 +65,19 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.searchRow}>
-                <View style={[styles.searchContainer, {backgroundColor: colors.surface, borderColor: colors.border}]}>
-                    <Ionicons name="search" size={18} color={colors.textSecondary}/>
+                <View style={styles.searchContainer}>
+                    <Ionicons name="search" size={17} color="#94A3B8"/>
                     <TextInput
                         placeholder="Restaurant ou ville..."
-                        placeholderTextColor={colors.textSecondary}
+                        placeholderTextColor="#94A3B8"
                         value={search}
                         onChangeText={setSearch}
                         style={[styles.searchInput, {color: colors.text}]}
+                        returnKeyType="search"
                     />
                     {search.length > 0 && (
-                        <TouchableOpacity onPress={() => setSearch("")}>
-                            <Ionicons name="close-circle" size={18} color={colors.textSecondary}/>
+                        <TouchableOpacity onPress={() => setSearch("")} hitSlop={10}>
+                            <Ionicons name="close-circle" size={17} color="#CBD5E1"/>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -84,19 +85,30 @@ export default function HomeScreen() {
                 <TouchableOpacity
                     style={[
                         styles.sortButton,
-                        {
-                            backgroundColor: priceSort ? colors.primary : colors.surface,
-                            borderColor: priceSort ? colors.primary : colors.border,
-                        },
+                        priceSort && {backgroundColor: colors.primary},
                     ]}
                     onPress={togglePriceSort}
-                    activeOpacity={0.7}
+                    activeOpacity={0.8}
+                    accessibilityLabel="Trier par prix"
                 >
-                    <Text style={[styles.sortButtonText, {color: priceSort ? "#FFFFFF" : colors.text}]}>€</Text>
+                    <Text
+                        style={[
+                            styles.sortButtonText,
+                            {color: priceSort ? "#FFFFFF" : colors.text},
+                        ]}
+                    >
+                        €
+                    </Text>
                     <Ionicons
-                        name={priceSort === "asc" ? "arrow-up" : priceSort === "desc" ? "arrow-down" : "swap-vertical"}
-                        size={16}
-                        color={priceSort ? "#FFFFFF" : colors.textSecondary}
+                        name={
+                            priceSort === "asc"
+                                ? "arrow-up"
+                                : priceSort === "desc"
+                                    ? "arrow-down"
+                                    : "swap-vertical"
+                        }
+                        size={13}
+                        color={priceSort ? "#FFFFFF" : "#64748B"}
                     />
                 </TouchableOpacity>
             </View>
@@ -179,45 +191,38 @@ const styles = StyleSheet.create({
         alignItems: "center",
         marginHorizontal: 20,
         marginBottom: 16,
-        gap: 10,
+        gap: 8,
     },
     searchContainer: {
         flex: 1,
+        height: 44,
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: 12,
-        borderWidth: 1,
+        paddingHorizontal: 13,
+        borderRadius: 14,
         gap: 8,
-        shadowColor: "#000",
-        shadowOffset: {width: 0, height: 1},
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
+        backgroundColor: "#F1F5F9",
     },
     searchInput: {
         flex: 1,
-        fontSize: 14,
+        fontSize: 14.5,
+        padding: 0,
+        includeFontPadding: false,
     },
     sortButton: {
+        height: 44,
+        minWidth: 56,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
         paddingHorizontal: 12,
-        paddingVertical: 12,
-        borderRadius: 12,
-        borderWidth: 1.5,
-        gap: 4,
-        shadowColor: "#000",
-        shadowOffset: {width: 0, height: 1},
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
+        borderRadius: 14,
+        gap: 3,
+        backgroundColor: "#F1F5F9",
     },
     sortButtonText: {
         fontSize: 15,
-        fontWeight: "700",
+        fontWeight: "800",
     },
     resultsContainer: {
         paddingHorizontal: 20,
