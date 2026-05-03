@@ -18,8 +18,8 @@ import { Colors } from "@/constants/Colors"
 import { getRestaurants } from "@/lib/api"
 import { calculateDistance, formatDistance } from "@/lib/utils"
 import type { Restaurant } from "@/types"
-import { CustomAlertManager} from "@/components/customAlert/CustomAlert";
-import {useColorScheme} from "@/components/useColorScheme";
+import { CustomAlertManager } from "@/components/customAlert/CustomAlert";
+import { useColorScheme } from "@/components/useColorScheme";
 
 const { width, height } = Dimensions.get("window")
 const ASPECT_RATIO = width / height

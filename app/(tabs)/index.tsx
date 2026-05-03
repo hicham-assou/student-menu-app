@@ -1,18 +1,18 @@
-import {useState} from "react"
-import {FlatList, Image, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View} from "react-native"
-import {Ionicons} from "@expo/vector-icons"
-import {Colors} from "@/constants/Colors"
-import {SafeAreaView} from "react-native-safe-area-context"
-import {useRestaurants} from "@/hooks/useRestaurant"
-import {RestaurantCard} from "@/components/restaurant/RestaurantCard"
-import type {Restaurant} from "@/types"
+import { useState } from "react"
+import { FlatList, Image, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
+import { Colors } from "@/constants/Colors"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { useRestaurants } from "@/hooks/useRestaurant"
+import { RestaurantCard } from "@/components/restaurant/RestaurantCard"
+import type { Restaurant } from "@/types"
 
 export default function HomeScreen() {
     const colors = Colors.light
     const [search, setSearch] = useState("")
     const [priceSort, setPriceSort] = useState<"asc" | "desc" | null>(null)
 
-    const {restaurants, loading, error, refresh, toggleFavorite, isFavorite} = useRestaurants()
+    const { restaurants, loading, error, refresh, toggleFavorite, isFavorite } = useRestaurants()
 
     const togglePriceSort = () => {
         if (priceSort === null) {
@@ -56,27 +56,27 @@ export default function HomeScreen() {
         : filteredRestaurants
 
     return (
-        <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
             <View style={styles.header}>
                 <View style={styles.titleContainer}>
-                    <Image source={require("@/assets/images/logo.png")} style={styles.logo} resizeMode="contain"/>
-                    <Text style={[styles.title, {color: colors.text}]}>Stud'Table</Text>
+                    <Image source={require("@/assets/images/logo.png")} style={styles.logo} resizeMode="contain" />
+                    <Text style={[styles.title, { color: colors.text }]}>Stud'Table</Text>
                 </View>
             </View>
 
             <View style={styles.searchRow}>
-                <View style={[styles.searchContainer, {backgroundColor: colors.surface, borderColor: colors.border}]}>
-                    <Ionicons name="search" size={18} color={colors.textSecondary}/>
+                <View style={[styles.searchContainer, { backgroundColor: colors.surface }]}>
+                    <Ionicons name="search" size={20} color={colors.textSecondary} />
                     <TextInput
-                        placeholder="Restaurant ou ville..."
+                        placeholder="Restaurant, ville..."
                         placeholderTextColor={colors.textSecondary}
                         value={search}
                         onChangeText={setSearch}
-                        style={[styles.searchInput, {color: colors.text}]}
+                        style={[styles.searchInput, { color: colors.text }]}
                     />
                     {search.length > 0 && (
-                        <TouchableOpacity onPress={() => setSearch("")}>
-                            <Ionicons name="close-circle" size={18} color={colors.textSecondary}/>
+                        <TouchableOpacity onPress={() => setSearch("")} style={styles.clearButton}>
+                            <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
                         </TouchableOpacity>
                     )}
                 </View>
@@ -84,26 +84,29 @@ export default function HomeScreen() {
                 <TouchableOpacity
                     style={[
                         styles.sortButton,
-                        {
-                            backgroundColor: priceSort ? colors.primary : colors.surface,
-                            borderColor: priceSort ? colors.primary : colors.border,
-                        },
+                        priceSort ? styles.sortButtonActive : null,
                     ]}
                     onPress={togglePriceSort}
                     activeOpacity={0.7}
                 >
-                    <Text style={[styles.sortButtonText, {color: priceSort ? "#FFFFFF" : colors.text}]}>€</Text>
                     <Ionicons
-                        name={priceSort === "asc" ? "arrow-up" : priceSort === "desc" ? "arrow-down" : "swap-vertical"}
-                        size={16}
-                        color={priceSort ? "#FFFFFF" : colors.textSecondary}
+                        name="pricetag-outline"
+                        size={18}
+                        color={priceSort ? "#FFFFFF" : colors.text}
                     />
+                    <View style={styles.sortIconContainer}>
+                        <Ionicons
+                            name={priceSort === "asc" ? "chevron-up" : priceSort === "desc" ? "chevron-down" : "swap-vertical"}
+                            size={12}
+                            color={priceSort ? "#FFFFFF" : colors.textSecondary}
+                        />
+                    </View>
                 </TouchableOpacity>
             </View>
 
             {search.length > 0 && (
                 <View style={styles.resultsContainer}>
-                    <Text style={[styles.resultsText, {color: colors.textSecondary}]}>
+                    <Text style={[styles.resultsText, { color: colors.textSecondary }]}>
                         {sortedRestaurants.length} résultat{sortedRestaurants.length > 1 ? "s" : ""}
                     </Text>
                 </View>
@@ -118,7 +121,7 @@ export default function HomeScreen() {
             <FlatList
                 data={sortedRestaurants}
                 keyExtractor={(item) => item.id}
-                renderItem={({item}) => (
+                renderItem={({ item }) => (
                     <RestaurantCard
                         restaurant={item}
                         isFavorite={isFavorite(item.id)}
@@ -138,9 +141,9 @@ export default function HomeScreen() {
                 ListEmptyComponent={
                     !loading ? (
                         <View style={styles.emptyContainer}>
-                            <Ionicons name="restaurant-outline" size={64} color={colors.textSecondary}/>
-                            <Text style={[styles.emptyText, {color: colors.text}]}>Aucun restaurant trouvé</Text>
-                            <Text style={[styles.emptySubtext, {color: colors.textSecondary}]}>
+                            <Ionicons name="restaurant-outline" size={64} color={colors.textSecondary} />
+                            <Text style={[styles.emptyText, { color: colors.text }]}>Aucun restaurant trouvé</Text>
+                            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
                                 {search ? "Essaie une autre recherche" : ""}
                             </Text>
                         </View>
@@ -178,46 +181,59 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         marginHorizontal: 20,
-        marginBottom: 16,
-        gap: 10,
+        marginBottom: 20,
+        gap: 12,
     },
     searchContainer: {
         flex: 1,
         flexDirection: "row",
         alignItems: "center",
         paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: 12,
-        borderWidth: 1,
+        paddingVertical: 10,
+        borderRadius: 20,
+        backgroundColor: "#FFFFFF",
         gap: 8,
         shadowColor: "#000",
-        shadowOffset: {width: 0, height: 1},
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
+        shadowRadius: 10,
+        elevation: 3,
     },
     searchInput: {
         flex: 1,
         fontSize: 14,
+        fontWeight: "500",
+    },
+    clearButton: {
+        padding: 2,
     },
     sortButton: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        paddingHorizontal: 12,
-        paddingVertical: 12,
-        borderRadius: 12,
-        borderWidth: 1.5,
-        gap: 4,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: "#FFFFFF",
         shadowColor: "#000",
-        shadowOffset: {width: 0, height: 1},
+        shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
+        shadowRadius: 10,
+        elevation: 3,
     },
-    sortButtonText: {
-        fontSize: 15,
-        fontWeight: "700",
+    sortButtonActive: {
+        backgroundColor: "#FF6B35",
+        shadowColor: "#FF6B35",
+        shadowOpacity: 0.3,
+        shadowOffset: { width: 0, height: 6 },
+    },
+    sortIconContainer: {
+        position: "absolute",
+        bottom: 8,
+        right: 8,
+        backgroundColor: "rgba(0,0,0,0.05)",
+        borderRadius: 8,
+        padding: 2,
     },
     resultsContainer: {
         paddingHorizontal: 20,

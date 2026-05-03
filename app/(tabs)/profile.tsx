@@ -14,7 +14,7 @@ const APP_VERSION = "1.0.0"
 
 export default function ProfileScreen() {
     const router = useRouter()
-    const {user, profile, signOut} = useAuth()
+    const {user, profile, signOut, refreshProfile} = useAuth()
     const [uploading, setUploading] = useState(false)
 
     const pickAndUploadAvatar = async () => {
@@ -27,7 +27,7 @@ export default function ProfileScreen() {
             }
 
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ['images'],
                 allowsEditing: true,
                 aspect: [1, 1],
                 quality: 0.8,
@@ -69,8 +69,8 @@ export default function ProfileScreen() {
                 if (updateError) throw updateError
 
                 CustomAlertManager.alert("Succès", "Ta photo de profil a été mise à jour", "success")
-                // Recharger le profil
-                window.location.reload()
+                // Recharger le profil en arrière-plan
+                await refreshProfile()
             }
         } catch (error) {
             console.error("Error uploading avatar:", error)
