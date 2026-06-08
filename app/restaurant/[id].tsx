@@ -7,6 +7,7 @@ import {
     Platform,
     RefreshControl,
     ScrollView,
+    Share,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -31,10 +32,15 @@ import { useNavigation } from "expo-router"
 import { CustomAlertManager } from "@/components/customAlert/CustomAlert"
 import type { Restaurant, Review } from "@/types"
 import { LinearGradient } from "expo-linear-gradient"
+import { getCategory, getTag, DAY_ORDER, DAY_SHORT } from "@/constants/discovery"
+import { getOpenStatus, hasAnyHours, formatPeriods } from "@/lib/hours"
 
 const { width } = Dimensions.get("window")
 const MENU_CARD_WIDTH = width * 0.66
 const MENU_CARD_SPACING = 12
+
+// Base des liens de partage (pages hebergees via GitHub Pages, dossier /docs)
+const SHARE_BASE_URL = "https://hicham-assou.github.io/student-menu-app"
 
 const palette = {
     orange: "#F97316",
@@ -203,6 +209,32 @@ export default function RestaurantDetailScreen() {
         }
     }
 
+    const handleShare = async () => {
+        if (!restaurant) return
+        try {
+            const link = `${SHARE_BASE_URL}/r.html?id=${restaurant.id}&name=${encodeURIComponent(restaurant.name)}`
+            const priceLine =
+                sortedMenus.length > 0 ? `\nMenu étudiant dès ${sortedMenus[0].price}` : ""
+            await Share.share({
+                title: restaurant.name,
+                message:
+                    `${restaurant.name} sur Stud'Table 🍽️${priceLine}\n` +
+                    `📍 ${restaurant.address}, ${restaurant.city}\n\n` +
+                    `👉 ${link}`,
+                url: link,
+            })
+        } catch (error) {
+            console.error("Error sharing:", error)
+        }
+    }
+
+    const handleReportError = () => {
+        if (!restaurant) return
+        router.push(
+            `/suggest?type=correction&restaurantId=${restaurant.id}&restaurantName=${encodeURIComponent(restaurant.name)}`,
+        )
+    }
+
     const handleMenuScroll = (event: any) => {
         const offsetX = event.nativeEvent.contentOffset.x
         const index = Math.round(offsetX / (MENU_CARD_WIDTH + MENU_CARD_SPACING))
@@ -229,6 +261,10 @@ export default function RestaurantDetailScreen() {
     })
 
     const displayedReviews = showAllReviews ? reviews : reviews.slice(0, 3)
+
+    const categories = (restaurant.categories || []).map(getCategory)
+    const tags = (restaurant.tags || []).map(getTag)
+    const openStatus = getOpenStatus(restaurant.hours)
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["bottom"]}>
@@ -265,6 +301,9 @@ export default function RestaurantDetailScreen() {
                         <LinearGradient colors={["transparent", "rgba(0,0,0,0.45)"]} style={styles.imageGradient} />
 
                         <View style={styles.imageActions}>
+                            <TouchableOpacity onPress={handleShare} style={styles.imageBtn}>
+                                <Ionicons name="share-social-outline" size={18} color={palette.white} />
+                            </TouchableOpacity>
                             {isOwner && (
                                 <TouchableOpacity onPress={() => router.push(`/owner/edit/${id}`)} style={styles.imageBtn}>
                                     <Ionicons name="create-outline" size={19} color={palette.white} />
@@ -297,6 +336,30 @@ export default function RestaurantDetailScreen() {
                                 {restaurant.address}, {restaurant.city}
                             </Text>
                         </View>
+
+                        {/* Catégories + tags */}
+                        {(categories.length > 0 || tags.length > 0) && (
+                            <View style={styles.tagsRow}>
+                                {categories.map(
+                                    (c) =>
+                                        c && (
+                                            <View key={c.id} style={styles.catChip}>
+                                                <Text style={styles.catChipText}>
+                                                    {c.emoji} {c.label}
+                                                </Text>
+                                            </View>
+                                        ),
+                                )}
+                                {tags.map(
+                                    (t) =>
+                                        t && (
+                                            <View key={t.id} style={styles.tagChip}>
+                                                <Text style={styles.tagChipText}>{t.label}</Text>
+                                            </View>
+                                        ),
+                                )}
+                            </View>
+                        )}
                     </View>
 
                     {/* Action buttons */}
@@ -314,14 +377,54 @@ export default function RestaurantDetailScreen() {
                     </View>
 
                     {/* Horaires */}
-                    {restaurant.opening_hours && (
+                    {hasAnyHours(restaurant.hours) && (
                         <View style={styles.infoCard}>
                             <View style={styles.infoIcon}>
                                 <Ionicons name="time-outline" size={20} color={palette.orange} />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.infoLabel}>Horaires</Text>
-                                <Text style={[styles.infoValue, { color: colors.text }]}>{restaurant.opening_hours}</Text>
+                                <View style={styles.hoursLabelRow}>
+                                    <Text style={styles.infoLabel}>Horaires</Text>
+                                    {openStatus && (
+                                        <View
+                                            style={[
+                                                styles.openPill,
+                                                { backgroundColor: openStatus.isOpen ? "#DCFCE7" : "#FEE2E2" },
+                                            ]}
+                                        >
+                                            <View
+                                                style={[
+                                                    styles.openDot,
+                                                    { backgroundColor: openStatus.isOpen ? "#16A34A" : "#DC2626" },
+                                                ]}
+                                            />
+                                            <Text
+                                                style={[
+                                                    styles.openPillText,
+                                                    { color: openStatus.isOpen ? "#15803D" : "#B91C1C" },
+                                                ]}
+                                            >
+                                                {openStatus.isOpen ? "Ouvert" : "Fermé"}
+                                                {openStatus.detail ? ` · ${openStatus.detail}` : ""}
+                                            </Text>
+                                        </View>
+                                    )}
+                                </View>
+                                <View style={styles.hoursList}>
+                                    {DAY_ORDER.map((d) => {
+                                        const isToday = new Date().getDay() === d
+                                        return (
+                                            <View key={d} style={styles.hoursDayRow}>
+                                                <Text style={[styles.hoursDay, isToday && styles.hoursToday]}>
+                                                    {DAY_SHORT[d]}
+                                                </Text>
+                                                <Text style={[styles.hoursVal, isToday && styles.hoursToday]}>
+                                                    {formatPeriods(restaurant.hours?.[d])}
+                                                </Text>
+                                            </View>
+                                        )
+                                    })}
+                                </View>
                             </View>
                         </View>
                     )}
@@ -460,6 +563,12 @@ export default function RestaurantDetailScreen() {
                             </TouchableOpacity>
                         )}
                     </View>
+
+                    {/* Signaler une erreur */}
+                    <TouchableOpacity onPress={handleReportError} style={styles.reportBtn} activeOpacity={0.7}>
+                        <Ionicons name="flag-outline" size={15} color={palette.gray500} />
+                        <Text style={styles.reportText}>Une info est incorrecte ? Signale-le</Text>
+                    </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>
 
@@ -574,6 +683,97 @@ const styles = StyleSheet.create({
         fontWeight: "500",
         color: palette.gray500,
         flex: 1,
+    },
+    tagsRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 7,
+        marginTop: 4,
+    },
+    catChip: {
+        backgroundColor: palette.orangeSoft,
+        paddingHorizontal: 11,
+        paddingVertical: 6,
+        borderRadius: 20,
+    },
+    catChipText: {
+        fontSize: 12.5,
+        fontWeight: "700",
+        color: "#9A3412",
+    },
+    tagChip: {
+        backgroundColor: "#F1F5F9",
+        paddingHorizontal: 11,
+        paddingVertical: 6,
+        borderRadius: 20,
+    },
+    tagChipText: {
+        fontSize: 12.5,
+        fontWeight: "600",
+        color: "#475569",
+    },
+    hoursLabelRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 3,
+        flexWrap: "wrap",
+    },
+    openPill: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 5,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 12,
+    },
+    openDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+    },
+    openPillText: {
+        fontSize: 11.5,
+        fontWeight: "700",
+    },
+    hoursList: {
+        marginTop: 4,
+        gap: 3,
+    },
+    hoursDayRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+    },
+    hoursDay: {
+        fontSize: 13.5,
+        color: palette.gray500,
+        fontWeight: "500",
+        width: 44,
+    },
+    hoursVal: {
+        fontSize: 13.5,
+        color: palette.gray500,
+        fontWeight: "500",
+        flex: 1,
+        textAlign: "right",
+    },
+    hoursToday: {
+        color: "#1C1917",
+        fontWeight: "800",
+    },
+    reportBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+        paddingVertical: 16,
+        marginTop: 8,
+    },
+    reportText: {
+        fontSize: 13,
+        fontWeight: "600",
+        color: palette.gray500,
+        textDecorationLine: "underline",
     },
 
     // Actions

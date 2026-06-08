@@ -1,55 +1,127 @@
-import { useState } from "react"
-import { FlatList, Image, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"
+import { useMemo, useState } from "react"
+import {
+    ActivityIndicator,
+    FlatList,
+    Image,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useRouter } from "expo-router"
 import { Colors } from "@/constants/Colors"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useRestaurants } from "@/hooks/useRestaurant"
+import { useUserLocation } from "@/hooks/useUserLocation"
 import { RestaurantCard } from "@/components/restaurant/RestaurantCard"
+import { CustomAlertManager } from "@/components/customAlert/CustomAlert"
+import { CategoryRegimeModal } from "@/components/discovery/CategoryRegimeModal"
+import { isOpenNow } from "@/lib/hours"
+import { calculateDistance } from "@/lib/utils"
 import type { Restaurant } from "@/types"
+
+function getMinMenuPrice(restaurant: Restaurant): number {
+    if (!restaurant.student_menu || restaurant.student_menu.length === 0) return 999999
+    const prices = restaurant.student_menu.map((menu) =>
+        Number.parseFloat(menu.price.replace("€", "").replace(",", ".").trim()),
+    )
+    const min = Math.min(...prices)
+    return isNaN(min) ? 999999 : min
+}
 
 export default function HomeScreen() {
     const colors = Colors.light
+    const router = useRouter()
     const [search, setSearch] = useState("")
     const [priceSort, setPriceSort] = useState<"asc" | "desc" | null>(null)
+    const [distanceSort, setDistanceSort] = useState(false)
+    const [openNow, setOpenNow] = useState(false)
+    const [filterCategories, setFilterCategories] = useState<string[]>([])
+    const [filterTags, setFilterTags] = useState<string[]>([])
+    const [showFilters, setShowFilters] = useState(false)
+    const [locating, setLocating] = useState(false)
 
     const { restaurants, loading, error, refresh, toggleFavorite, isFavorite } = useRestaurants()
+    const { location, requestLocation } = useUserLocation({ autoRequest: false })
 
     const togglePriceSort = () => {
-        if (priceSort === null) {
-            setPriceSort("asc")
-        } else if (priceSort === "asc") {
-            setPriceSort("desc")
-        } else {
+        setDistanceSort(false)
+        setPriceSort((prev) => (prev === null ? "asc" : prev === "asc" ? "desc" : null))
+    }
+
+    const toggleDistanceSort = async () => {
+        if (distanceSort) {
+            setDistanceSort(false)
+            return
+        }
+        let loc = location
+        if (!loc) {
+            setLocating(true)
+            loc = await requestLocation()
+            setLocating(false)
+        }
+        if (loc) {
+            setDistanceSort(true)
             setPriceSort(null)
+        } else {
+            CustomAlertManager.alert(
+                "Localisation désactivée",
+                "Active la localisation pour trier les restos les plus proches de toi.",
+                "info",
+            )
         }
     }
 
-    const getMinMenuPrice = (restaurant: Restaurant) => {
-        if (!restaurant.student_menu || restaurant.student_menu.length === 0) return 999999
-        const prices = restaurant.student_menu.map((menu) => {
-            const priceStr = menu.price.replace("€", "").replace(",", ".").trim()
-            return Number.parseFloat(priceStr)
-        })
-        const minPrice = Math.min(...prices)
-        return isNaN(minPrice) ? 999999 : minPrice
-    }
+    // Enrichissement (prix, distance, statut ouvert)
+    const enriched = useMemo(() => {
+        return restaurants.map((r) => ({
+            restaurant: r,
+            minPrice: getMinMenuPrice(r),
+            distance: location
+                ? calculateDistance(location.latitude, location.longitude, r.latitude, r.longitude)
+                : null,
+            open: isOpenNow(r.hours),
+        }))
+    }, [restaurants, location])
 
-    const filteredRestaurants = restaurants.filter((restaurant) => {
-        if (!search.trim()) return true
-        const searchLower = search.toLowerCase().trim()
-        const nameMatch = restaurant.name.toLowerCase().includes(searchLower)
-        const cityMatch = restaurant.city?.toLowerCase().includes(searchLower) || false
-        const addressMatch = restaurant.address?.toLowerCase().includes(searchLower) || false
-        return nameMatch || cityMatch || addressMatch
-    })
-
-    const sortedRestaurants = priceSort
-        ? [...filteredRestaurants].sort((a, b) => {
-            const aPrice = getMinMenuPrice(a)
-            const bPrice = getMinMenuPrice(b)
-            return priceSort === "asc" ? aPrice - bPrice : bPrice - aPrice
+    // Filtrage
+    const filtered = useMemo(() => {
+        const q = search.trim().toLowerCase()
+        return enriched.filter(({ restaurant: r, open }) => {
+            if (q) {
+                const haystack = `${r.name} ${r.city ?? ""} ${r.address ?? ""}`.toLowerCase()
+                if (!haystack.includes(q)) return false
+            }
+            if (
+                filterCategories.length > 0 &&
+                !(r.categories || []).some((c) => filterCategories.includes(c))
+            )
+                return false
+            if (filterTags.length > 0 && !filterTags.every((t) => (r.tags || []).includes(t))) return false
+            if (openNow && !open) return false
+            return true
         })
-        : filteredRestaurants
+    }, [enriched, search, filterCategories, filterTags, openNow])
+
+    // Tri
+    const sorted = useMemo(() => {
+        const arr = [...filtered]
+        if (distanceSort && location) {
+            arr.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity))
+        } else if (priceSort) {
+            arr.sort((a, b) =>
+                priceSort === "asc" ? a.minPrice - b.minPrice : b.minPrice - a.minPrice,
+            )
+        }
+        return arr
+    }, [filtered, distanceSort, priceSort, location])
+
+    const activeFilterCount = filterCategories.length + filterTags.length
+    const hasActiveFilter = !!search || activeFilterCount > 0 || openNow || distanceSort
 
     return (
         <SafeAreaView style={styles.container}>
@@ -62,7 +134,7 @@ export default function HomeScreen() {
                 </View>
             </View>
 
-            {/* Search + Sort */}
+            {/* Search + price sort */}
             <View style={styles.searchRow}>
                 <View style={styles.searchContainer}>
                     <Ionicons name="search" size={17} color="#94A3B8" />
@@ -87,9 +159,7 @@ export default function HomeScreen() {
                     activeOpacity={0.8}
                     accessibilityLabel="Trier par prix"
                 >
-                    <Text style={[styles.sortButtonText, { color: priceSort ? "#FFFFFF" : colors.text }]}>
-                        €
-                    </Text>
+                    <Text style={[styles.sortButtonText, { color: priceSort ? "#FFFFFF" : colors.text }]}>€</Text>
                     <Ionicons
                         name={priceSort === "asc" ? "arrow-up" : priceSort === "desc" ? "arrow-down" : "swap-vertical"}
                         size={13}
@@ -98,10 +168,42 @@ export default function HomeScreen() {
                 </TouchableOpacity>
             </View>
 
-            {search.length > 0 && (
+            {/* Barre de filtres */}
+            <View style={styles.filterWrap}>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.filterRow}
+                >
+                    <Chip
+                        active={distanceSort}
+                        onPress={toggleDistanceSort}
+                        icon="navigate"
+                        label={locating ? "Localisation…" : "Près de moi"}
+                        loading={locating}
+                    />
+                    <Chip active={openNow} onPress={() => setOpenNow((v) => !v)} icon="time" label="Ouvert" />
+                    <TouchableOpacity
+                        onPress={() => setShowFilters(true)}
+                        activeOpacity={0.8}
+                        style={[styles.chip, styles.chipIcon, activeFilterCount > 0 && styles.chipActive]}
+                    >
+                        <Ionicons
+                            name="options-outline"
+                            size={15}
+                            color={activeFilterCount > 0 ? "#FFFFFF" : "#F97316"}
+                        />
+                        <Text style={[styles.chipText, activeFilterCount > 0 && styles.chipTextActive]}>
+                            {activeFilterCount > 0 ? `Filtres (${activeFilterCount})` : "Filtres"}
+                        </Text>
+                    </TouchableOpacity>
+                </ScrollView>
+            </View>
+
+            {hasActiveFilter && (
                 <View style={styles.resultsContainer}>
                     <Text style={[styles.resultsText, { color: colors.textSecondary }]}>
-                        {sortedRestaurants.length} résultat{sortedRestaurants.length > 1 ? "s" : ""}
+                        {sorted.length} résultat{sorted.length > 1 ? "s" : ""}
                     </Text>
                 </View>
             )}
@@ -113,13 +215,13 @@ export default function HomeScreen() {
             )}
 
             <FlatList
-                data={sortedRestaurants}
-                keyExtractor={(item) => item.id}
+                data={sorted}
+                keyExtractor={(item) => item.restaurant.id}
                 renderItem={({ item }) => (
                     <RestaurantCard
-                        restaurant={item}
-                        isFavorite={isFavorite(item.id)}
-                        onToggleFavorite={() => toggleFavorite(item.id)}
+                        restaurant={item.restaurant}
+                        isFavorite={isFavorite(item.restaurant.id)}
+                        onToggleFavorite={() => toggleFavorite(item.restaurant.id)}
                     />
                 )}
                 contentContainerStyle={styles.list}
@@ -132,19 +234,80 @@ export default function HomeScreen() {
                         colors={[colors.primary]}
                     />
                 }
+                ListFooterComponent={
+                    sorted.length > 0 ? (
+                        <TouchableOpacity
+                            style={styles.suggestBtn}
+                            onPress={() => router.push("/suggest")}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
+                            <Text style={styles.suggestText}>Un resto manque ? Suggère-le</Text>
+                        </TouchableOpacity>
+                    ) : null
+                }
                 ListEmptyComponent={
                     !loading ? (
                         <View style={styles.emptyContainer}>
                             <Ionicons name="restaurant-outline" size={64} color={colors.textSecondary} />
                             <Text style={[styles.emptyText, { color: colors.text }]}>Aucun restaurant trouvé</Text>
                             <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
-                                {search ? "Essaie une autre recherche" : ""}
+                                {hasActiveFilter ? "Essaie d'élargir tes filtres" : ""}
                             </Text>
+                            <TouchableOpacity
+                                style={styles.suggestBtnEmpty}
+                                onPress={() => router.push("/suggest")}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="add-circle-outline" size={18} color="#FFFFFF" />
+                                <Text style={styles.suggestTextEmpty}>Suggérer un resto</Text>
+                            </TouchableOpacity>
                         </View>
                     ) : null
                 }
             />
+
+            <CategoryRegimeModal
+                visible={showFilters}
+                initialCategories={filterCategories}
+                initialTags={filterTags}
+                onClose={() => setShowFilters(false)}
+                onApply={(c, t) => {
+                    setFilterCategories(c)
+                    setFilterTags(t)
+                }}
+            />
         </SafeAreaView>
+    )
+}
+
+function Chip({
+    active,
+    onPress,
+    icon,
+    label,
+    loading,
+}: {
+    active: boolean
+    onPress: () => void
+    icon: keyof typeof Ionicons.glyphMap
+    label: string
+    loading?: boolean
+}) {
+    return (
+        <TouchableOpacity
+            onPress={onPress}
+            disabled={loading}
+            activeOpacity={0.8}
+            style={[styles.chip, styles.chipIcon, active && styles.chipActive]}
+        >
+            {loading ? (
+                <ActivityIndicator size="small" color="#F97316" />
+            ) : (
+                <Ionicons name={icon} size={14} color={active ? "#FFFFFF" : "#F97316"} />
+            )}
+            <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+        </TouchableOpacity>
     )
 }
 
@@ -184,7 +347,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         marginHorizontal: 20,
-        marginBottom: 16,
+        marginBottom: 12,
         gap: 8,
     },
     searchContainer: {
@@ -228,6 +391,51 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: "800",
     },
+    filterWrap: {
+        marginBottom: 8,
+    },
+    filterRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        paddingHorizontal: 20,
+    },
+    chip: {
+        paddingHorizontal: 13,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1.5,
+        borderColor: "transparent",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 1,
+    },
+    chipIcon: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 5,
+    },
+    chipActive: {
+        backgroundColor: "#F97316",
+        borderColor: "#F97316",
+    },
+    chipText: {
+        fontSize: 13,
+        fontWeight: "700",
+        color: "#1C1917",
+    },
+    chipTextActive: {
+        color: "#FFFFFF",
+    },
+    divider: {
+        width: 1,
+        height: 24,
+        backgroundColor: "#ECE7E1",
+        marginHorizontal: 2,
+    },
     resultsContainer: {
         paddingHorizontal: 20,
         marginBottom: 8,
@@ -254,6 +462,19 @@ const styles = StyleSheet.create({
         fontWeight: "500",
         fontSize: 14,
     },
+    suggestBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        paddingVertical: 16,
+        marginTop: 14,
+    },
+    suggestText: {
+        fontSize: 14,
+        fontWeight: "700",
+        color: "#F97316",
+    },
     emptyContainer: {
         alignItems: "center",
         paddingTop: 60,
@@ -268,5 +489,20 @@ const styles = StyleSheet.create({
     emptySubtext: {
         fontSize: 14,
         textAlign: "center",
+    },
+    suggestBtnEmpty: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        backgroundColor: "#F97316",
+        paddingHorizontal: 18,
+        paddingVertical: 12,
+        borderRadius: 14,
+        marginTop: 10,
+    },
+    suggestTextEmpty: {
+        color: "#FFFFFF",
+        fontSize: 14.5,
+        fontWeight: "700",
     },
 })

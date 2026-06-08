@@ -22,7 +22,10 @@ import { useAuth } from "@/contexts/AuthContext"
 import { getRestaurants } from "@/lib/api"
 import { isRestaurantOwner } from "@/lib/restaurants"
 import { Button } from "@/components/ui/Button"
-import type { Restaurant } from "@/types"
+import type { Restaurant, WeeklyHours } from "@/types"
+import { getCategory, getTag } from "@/constants/discovery"
+import { HoursEditor } from "@/components/owner/HoursEditor"
+import { CategoryRegimeModal } from "@/components/discovery/CategoryRegimeModal"
 import * as ImagePicker from "expo-image-picker"
 import { supabase } from "@/lib/supabase"
 import FormData from "form-data"
@@ -46,11 +49,14 @@ export default function EditRestaurantScreen() {
     const [address, setAddress] = useState("")
     const [city, setCity] = useState("")
     const [phone, setPhone] = useState("")
-    const [openingHours, setOpeningHours] = useState("")
     const [description, setDescription] = useState("")
     const [isGeocodingAddress, setIsGeocodingAddress] = useState(false)
     const [studentMenuConditions, setStudentMenuConditions] = useState("")
     const [imageUrl, setImageUrl] = useState("")
+    const [categories, setCategories] = useState<string[]>([])
+    const [tags, setTags] = useState<string[]>([])
+    const [hours, setHours] = useState<WeeklyHours>({})
+    const [showCatModal, setShowCatModal] = useState(false)
 
     useEffect(() => {
         loadRestaurant()
@@ -142,7 +148,6 @@ export default function EditRestaurantScreen() {
                 setAddress(found.address || "")
                 setCity(found.city || "")
                 setPhone(found.phone || "")
-                setOpeningHours(found.opening_hours || "")
                 setDescription(found.description || "")
                 setImage(found.image || "")
                 setImageUrl(found.image_url || "")
@@ -154,6 +159,9 @@ export default function EditRestaurantScreen() {
                     })) || [],
                 )
                 setStudentMenuConditions(found.student_menu_conditions || "")
+                setCategories(found.categories || [])
+                setTags(found.tags || [])
+                setHours(found.hours || {})
             } else {
                 CustomAlertManager.alert("Erreur", "Restaurant introuvable", "error")
                 router.back()
@@ -290,7 +298,9 @@ export default function EditRestaurantScreen() {
                 address,
                 city,
                 phone,
-                opening_hours: openingHours,
+                hours: Object.keys(hours).length > 0 ? hours : null,
+                categories,
+                tags,
                 description,
                 student_menu: formattedMenus,
                 student_menu_conditions: studentMenuConditions,
@@ -469,20 +479,7 @@ export default function EditRestaurantScreen() {
 
                         <View style={styles.inputGroup}>
                             <Text style={[styles.label, { color: colors.text }]}>Horaires d'ouverture</Text>
-                            <TextInput
-                                style={[
-                                    styles.input,
-                                    {
-                                        backgroundColor: colors.surface,
-                                        color: colors.text,
-                                        borderColor: colors.border,
-                                    },
-                                ]}
-                                value={openingHours}
-                                onChangeText={setOpeningHours}
-                                placeholder="Ex: Lun-Ven 11h-15h, 18h-22h"
-                                placeholderTextColor={colors.textSecondary}
-                            />
+                            <HoursEditor initial={hours} onChange={setHours} />
                         </View>
 
                         <View style={styles.inputGroup}>
@@ -538,6 +535,30 @@ export default function EditRestaurantScreen() {
                                 textAlignVertical="top"
                             />
                         </View>
+                    </View>
+
+                    {/* Catégorie & régime */}
+                    <View style={styles.section}>
+                        <Text style={[styles.sectionTitle, { color: colors.text }]}>Catégorie & régime</Text>
+                        <TouchableOpacity
+                            style={[styles.selectorBtn, { borderColor: colors.border, backgroundColor: colors.surface }]}
+                            onPress={() => setShowCatModal(true)}
+                            activeOpacity={0.7}
+                        >
+                            {categories.length === 0 && tags.length === 0 ? (
+                                <Text style={[styles.selectorPlaceholder, { color: colors.textSecondary }]}>
+                                    Choisir les catégories et régimes
+                                </Text>
+                            ) : (
+                                <Text style={[styles.selectorValue, { color: colors.text }]} numberOfLines={2}>
+                                    {[
+                                        ...categories.map((id) => getCategory(id)?.label).filter(Boolean),
+                                        ...tags.map((id) => getTag(id)?.label).filter(Boolean),
+                                    ].join(", ")}
+                                </Text>
+                            )}
+                            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                        </TouchableOpacity>
                     </View>
 
                     {/* Conditions pour les menus étudiants */}
@@ -665,6 +686,17 @@ export default function EditRestaurantScreen() {
                     />
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            <CategoryRegimeModal
+                visible={showCatModal}
+                initialCategories={categories}
+                initialTags={tags}
+                onClose={() => setShowCatModal(false)}
+                onApply={(c, t) => {
+                    setCategories(c)
+                    setTags(t)
+                }}
+            />
         </SafeAreaView>
     )
 }
@@ -869,5 +901,23 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         borderWidth: 1,
         overflow: "hidden",
+    },
+    selectorBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        borderWidth: 1,
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+    },
+    selectorPlaceholder: {
+        flex: 1,
+        fontSize: 15,
+    },
+    selectorValue: {
+        flex: 1,
+        fontSize: 15,
+        fontWeight: "600",
     },
 })
