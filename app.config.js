@@ -24,8 +24,6 @@ export default {
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           "Stud'Table utilise ta position pour trouver les restaurants près de toi.",
-        NSLocationAlwaysUsageDescription:
-          "Stud'Table utilise ta position pour trouver les restaurants près de toi.",
         NSCameraUsageDescription:
           "Stud'Table utilise la caméra pour prendre des photos.",
         NSPhotoLibraryUsageDescription:
@@ -43,15 +41,21 @@ export default {
           apiKey: process.env.GOOGLE_MAPS_API_KEY_ANDROID,
         },
       },
+      // Permissions strictement necessaires : localisation 1er plan + galerie/camera.
+      // Pas de background location, ni micro, ni stockage externe legacy.
       permissions: [
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+      ],
+      // On bloque explicitement celles que des plugins pourraient rajouter
+      // (sinon risque de rejet / mauvaise fiche Play Store).
+      blockedPermissions: [
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.RECORD_AUDIO",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.RECORD_AUDIO",
       ],
     },
     web: {
@@ -64,8 +68,10 @@ export default {
       [
         "expo-location",
         {
-          locationAlwaysAndWhenInUsePermission:
+          // Localisation en 1er plan uniquement (pas de background)
+          locationWhenInUsePermission:
             "Stud'Table utilise ta position pour trouver les restaurants près de toi.",
+          isAndroidBackgroundLocationEnabled: false,
         },
       ],
       [
