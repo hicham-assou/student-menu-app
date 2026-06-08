@@ -9,6 +9,7 @@ interface Profile {
     id: string
     email: string
     full_name: string | null
+    avatar_url?: string | null
     role: "student" | "restaurant_owner" | "admin"
     created_at: string
 }
@@ -26,6 +27,7 @@ interface AuthContextType {
         role: "student" | "restaurant_owner",
     ) => Promise<{ error: any }>
     signOut: () => Promise<void>
+    deleteAccount: () => Promise<void>
     refreshProfile: () => Promise<void>
 }
 
@@ -37,6 +39,7 @@ const AuthContext = createContext<AuthContextType>({
     signIn: async () => ({ error: null }),
     signUp: async () => ({ error: null }),
     signOut: async () => {},
+    deleteAccount: async () => {},
     refreshProfile: async () => {},
 })
 
@@ -138,8 +141,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(null)
     }
 
+    // Suppression definitive du compte : appelle la fonction Postgres
+    // `delete_user_account` (SECURITY DEFINER) qui efface les avis, favoris,
+    // le profil et le compte auth, puis on deconnecte localement.
+    const deleteAccount = async () => {
+        const { error } = await supabase.rpc("delete_user_account")
+        if (error) throw error
+        await supabase.auth.signOut()
+        setUser(null)
+        setProfile(null)
+        setSession(null)
+    }
+
     return (
-        <AuthContext.Provider value={{ user, profile, session, loading, signIn, signUp, signOut, refreshProfile }}>
+        <AuthContext.Provider
+            value={{ user, profile, session, loading, signIn, signUp, signOut, deleteAccount, refreshProfile }}
+        >
             {children}
         </AuthContext.Provider>
     )

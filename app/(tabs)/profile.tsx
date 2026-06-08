@@ -38,7 +38,7 @@ function MenuRow({ icon, iconColor, iconBg, label, onPress, isLast }: MenuRowPro
 
 export default function ProfileScreen() {
     const router = useRouter()
-    const { user, profile, signOut, refreshProfile } = useAuth()
+    const { user, profile, signOut, deleteAccount, refreshProfile } = useAuth()
     const [uploading, setUploading] = useState(false)
 
     const pickAndUploadAvatar = async () => {
@@ -105,6 +105,34 @@ export default function ProfileScreen() {
             { text: "Annuler", style: "cancel" },
             { text: "Me déconnecter", onPress: signOut, style: "destructive" },
         ])
+    }
+
+    const handleDeleteAccount = () => {
+        CustomAlertManager.alert(
+            "Supprimer mon compte",
+            "Cette action est définitive. Ton compte, tes favoris et tes avis seront supprimés et ne pourront pas être récupérés.",
+            "confirm",
+            [
+                { text: "Annuler", style: "cancel" },
+                {
+                    text: "Supprimer définitivement",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            await deleteAccount()
+                            CustomAlertManager.alert("Compte supprimé", "Ton compte a bien été supprimé.", "success")
+                        } catch (error) {
+                            console.error("Error deleting account:", error)
+                            CustomAlertManager.alert(
+                                "Erreur",
+                                "Impossible de supprimer le compte pour le moment. Réessaie ou écris-nous à StudTable@outlook.com.",
+                                "error",
+                            )
+                        }
+                    },
+                },
+            ],
+        )
     }
 
     const renderPublicSection = () => (
@@ -240,6 +268,12 @@ export default function ProfileScreen() {
                 <TouchableOpacity onPress={handleSignOut} style={styles.signOutButton} activeOpacity={0.7}>
                     <Ionicons name="log-out-outline" size={20} color="#EF4444" />
                     <Text style={styles.signOutText}>Se déconnecter</Text>
+                </TouchableOpacity>
+
+                {/* Suppression de compte (exigence Play Store) */}
+                <TouchableOpacity onPress={handleDeleteAccount} style={styles.deleteAccountButton} activeOpacity={0.6}>
+                    <Ionicons name="trash-outline" size={16} color="#A8A29E" />
+                    <Text style={styles.deleteAccountText}>Supprimer mon compte</Text>
                 </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
@@ -383,6 +417,20 @@ const styles = StyleSheet.create({
         color: "#EF4444",
         fontSize: 15.5,
         fontWeight: "700",
+    },
+    deleteAccountButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+        paddingVertical: 14,
+        marginTop: 4,
+    },
+    deleteAccountText: {
+        color: "#A8A29E",
+        fontSize: 13.5,
+        fontWeight: "600",
+        textDecorationLine: "underline",
     },
     notLoggedInHeader: {
         alignItems: "center",
