@@ -5,6 +5,14 @@ export interface MenuItem {
     image_url?: string
 }
 
+// Horaires structures (pour le statut "ouvert maintenant")
+export interface HoursPeriod {
+    open: string  // "HH:MM"
+    close: string // "HH:MM"
+}
+// Cle = jour (0 = dimanche ... 6 = samedi), valeur = creneaux du jour
+export type WeeklyHours = Record<number, HoursPeriod[]>
+
 export interface Restaurant {
     id: string
     name: string
@@ -15,12 +23,28 @@ export interface Restaurant {
     phone?: string
     description?: string
     opening_hours: string
+    hours?: WeeklyHours | null
+    category?: string
+    tags?: string[]
     image?: string
     student_menu: MenuItem[]
     student_menu_conditions?: string
     created_at?: string
     subscription_status: 'active' | 'inactive' | 'expired'
     owner_id?: string
+}
+
+// Suggestion d'un nouveau resto ou signalement d'une erreur
+export interface Suggestion {
+    id?: string
+    type: 'new' | 'correction'
+    restaurant_id?: string | null
+    restaurant_name?: string
+    address?: string
+    city?: string
+    message?: string
+    contact_email?: string
+    created_at?: string
 }
 
 // Types pour les favoris

@@ -22,7 +22,10 @@ import { useAuth } from "@/contexts/AuthContext"
 import { getRestaurants } from "@/lib/api"
 import { isRestaurantOwner } from "@/lib/restaurants"
 import { Button } from "@/components/ui/Button"
-import type { Restaurant } from "@/types"
+import type { Restaurant, WeeklyHours } from "@/types"
+import { CATEGORIES, TAGS } from "@/constants/discovery"
+import { weeklyHoursToString } from "@/lib/hours"
+import { HoursEditor } from "@/components/owner/HoursEditor"
 import * as ImagePicker from "expo-image-picker"
 import { supabase } from "@/lib/supabase"
 import FormData from "form-data"
@@ -51,6 +54,9 @@ export default function EditRestaurantScreen() {
     const [isGeocodingAddress, setIsGeocodingAddress] = useState(false)
     const [studentMenuConditions, setStudentMenuConditions] = useState("")
     const [imageUrl, setImageUrl] = useState("")
+    const [category, setCategory] = useState<string>("")
+    const [tags, setTags] = useState<string[]>([])
+    const [hours, setHours] = useState<WeeklyHours>({})
 
     useEffect(() => {
         loadRestaurant()
@@ -154,6 +160,9 @@ export default function EditRestaurantScreen() {
                     })) || [],
                 )
                 setStudentMenuConditions(found.student_menu_conditions || "")
+                setCategory(found.category || "")
+                setTags(found.tags || [])
+                setHours(found.hours || {})
             } else {
                 CustomAlertManager.alert("Erreur", "Restaurant introuvable", "error")
                 router.back()
@@ -285,12 +294,17 @@ export default function EditRestaurantScreen() {
                 image_url: menu.image_url || "",
             }))
 
+            const generatedHours = weeklyHoursToString(hours)
+
             const updates = {
                 name,
                 address,
                 city,
                 phone,
-                opening_hours: openingHours,
+                opening_hours: generatedHours || openingHours,
+                hours: Object.keys(hours).length > 0 ? hours : null,
+                category: category || null,
+                tags,
                 description,
                 student_menu: formattedMenus,
                 student_menu_conditions: studentMenuConditions,
@@ -469,20 +483,7 @@ export default function EditRestaurantScreen() {
 
                         <View style={styles.inputGroup}>
                             <Text style={[styles.label, { color: colors.text }]}>Horaires d'ouverture</Text>
-                            <TextInput
-                                style={[
-                                    styles.input,
-                                    {
-                                        backgroundColor: colors.surface,
-                                        color: colors.text,
-                                        borderColor: colors.border,
-                                    },
-                                ]}
-                                value={openingHours}
-                                onChangeText={setOpeningHours}
-                                placeholder="Ex: Lun-Ven 11h-15h, 18h-22h"
-                                placeholderTextColor={colors.textSecondary}
-                            />
+                            <HoursEditor initial={hours} onChange={setHours} />
                         </View>
 
                         <View style={styles.inputGroup}>
@@ -537,6 +538,57 @@ export default function EditRestaurantScreen() {
                                 numberOfLines={4}
                                 textAlignVertical="top"
                             />
+                        </View>
+                    </View>
+
+                    {/* Catégorie & régime */}
+                    <View style={styles.section}>
+                        <Text style={[styles.sectionTitle, { color: colors.text }]}>Catégorie & régime</Text>
+
+                        <Text style={[styles.label, { color: colors.text }]}>Type de cuisine</Text>
+                        <View style={styles.chipsWrap}>
+                            {CATEGORIES.map((c) => {
+                                const active = category === c.id
+                                return (
+                                    <TouchableOpacity
+                                        key={c.id}
+                                        onPress={() => setCategory(active ? "" : c.id)}
+                                        style={[
+                                            styles.pickChip,
+                                            { borderColor: colors.border },
+                                            active && { backgroundColor: colors.primary, borderColor: colors.primary },
+                                        ]}
+                                    >
+                                        <Text style={[styles.pickChipText, { color: active ? "#FFFFFF" : colors.text }]}>
+                                            {c.emoji} {c.label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                )
+                            })}
+                        </View>
+
+                        <Text style={[styles.label, { color: colors.text, marginTop: 16 }]}>Régime</Text>
+                        <View style={styles.chipsWrap}>
+                            {TAGS.map((t) => {
+                                const active = tags.includes(t.id)
+                                return (
+                                    <TouchableOpacity
+                                        key={t.id}
+                                        onPress={() =>
+                                            setTags(active ? tags.filter((x) => x !== t.id) : [...tags, t.id])
+                                        }
+                                        style={[
+                                            styles.pickChip,
+                                            { borderColor: colors.border },
+                                            active && { backgroundColor: colors.primary, borderColor: colors.primary },
+                                        ]}
+                                    >
+                                        <Text style={[styles.pickChipText, { color: active ? "#FFFFFF" : colors.text }]}>
+                                            {t.label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                )
+                            })}
                         </View>
                     </View>
 
@@ -869,5 +921,20 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         borderWidth: 1,
         overflow: "hidden",
+    },
+    chipsWrap: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8,
+    },
+    pickChip: {
+        paddingHorizontal: 13,
+        paddingVertical: 9,
+        borderRadius: 20,
+        borderWidth: 1.5,
+    },
+    pickChipText: {
+        fontSize: 13.5,
+        fontWeight: "600",
     },
 })

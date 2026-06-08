@@ -7,6 +7,7 @@ import {
     Platform,
     RefreshControl,
     ScrollView,
+    Share,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -31,6 +32,8 @@ import { useNavigation } from "expo-router"
 import { CustomAlertManager } from "@/components/customAlert/CustomAlert"
 import type { Restaurant, Review } from "@/types"
 import { LinearGradient } from "expo-linear-gradient"
+import { getCategory, getTag } from "@/constants/discovery"
+import { getOpenStatus } from "@/lib/hours"
 
 const { width } = Dimensions.get("window")
 const MENU_CARD_WIDTH = width * 0.66
@@ -203,6 +206,28 @@ export default function RestaurantDetailScreen() {
         }
     }
 
+    const handleShare = async () => {
+        if (!restaurant) return
+        try {
+            const priceLine =
+                sortedMenus.length > 0 ? `\nMenu étudiant dès ${sortedMenus[0].price}` : ""
+            await Share.share({
+                message:
+                    `${restaurant.name} — sur Stud'Table 🍽️${priceLine}\n` +
+                    `📍 ${restaurant.address}, ${restaurant.city}`,
+            })
+        } catch (error) {
+            console.error("Error sharing:", error)
+        }
+    }
+
+    const handleReportError = () => {
+        if (!restaurant) return
+        router.push(
+            `/suggest?type=correction&restaurantId=${restaurant.id}&restaurantName=${encodeURIComponent(restaurant.name)}`,
+        )
+    }
+
     const handleMenuScroll = (event: any) => {
         const offsetX = event.nativeEvent.contentOffset.x
         const index = Math.round(offsetX / (MENU_CARD_WIDTH + MENU_CARD_SPACING))
@@ -229,6 +254,10 @@ export default function RestaurantDetailScreen() {
     })
 
     const displayedReviews = showAllReviews ? reviews : reviews.slice(0, 3)
+
+    const category = getCategory(restaurant.category)
+    const tags = (restaurant.tags || []).map(getTag)
+    const openStatus = getOpenStatus(restaurant.hours)
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["bottom"]}>
@@ -265,6 +294,9 @@ export default function RestaurantDetailScreen() {
                         <LinearGradient colors={["transparent", "rgba(0,0,0,0.45)"]} style={styles.imageGradient} />
 
                         <View style={styles.imageActions}>
+                            <TouchableOpacity onPress={handleShare} style={styles.imageBtn}>
+                                <Ionicons name="share-social-outline" size={18} color={palette.white} />
+                            </TouchableOpacity>
                             {isOwner && (
                                 <TouchableOpacity onPress={() => router.push(`/owner/edit/${id}`)} style={styles.imageBtn}>
                                     <Ionicons name="create-outline" size={19} color={palette.white} />
@@ -297,6 +329,27 @@ export default function RestaurantDetailScreen() {
                                 {restaurant.address}, {restaurant.city}
                             </Text>
                         </View>
+
+                        {/* Catégorie + tags */}
+                        {(category || tags.length > 0) && (
+                            <View style={styles.tagsRow}>
+                                {category && (
+                                    <View style={styles.catChip}>
+                                        <Text style={styles.catChipText}>
+                                            {category.emoji} {category.label}
+                                        </Text>
+                                    </View>
+                                )}
+                                {tags.map(
+                                    (t) =>
+                                        t && (
+                                            <View key={t.id} style={styles.tagChip}>
+                                                <Text style={styles.tagChipText}>{t.label}</Text>
+                                            </View>
+                                        ),
+                                )}
+                            </View>
+                        )}
                     </View>
 
                     {/* Action buttons */}
@@ -314,14 +367,44 @@ export default function RestaurantDetailScreen() {
                     </View>
 
                     {/* Horaires */}
-                    {restaurant.opening_hours && (
+                    {(restaurant.opening_hours || openStatus) && (
                         <View style={styles.infoCard}>
                             <View style={styles.infoIcon}>
                                 <Ionicons name="time-outline" size={20} color={palette.orange} />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.infoLabel}>Horaires</Text>
-                                <Text style={[styles.infoValue, { color: colors.text }]}>{restaurant.opening_hours}</Text>
+                                <View style={styles.hoursLabelRow}>
+                                    <Text style={styles.infoLabel}>Horaires</Text>
+                                    {openStatus && (
+                                        <View
+                                            style={[
+                                                styles.openPill,
+                                                { backgroundColor: openStatus.isOpen ? "#DCFCE7" : "#FEE2E2" },
+                                            ]}
+                                        >
+                                            <View
+                                                style={[
+                                                    styles.openDot,
+                                                    { backgroundColor: openStatus.isOpen ? "#16A34A" : "#DC2626" },
+                                                ]}
+                                            />
+                                            <Text
+                                                style={[
+                                                    styles.openPillText,
+                                                    { color: openStatus.isOpen ? "#15803D" : "#B91C1C" },
+                                                ]}
+                                            >
+                                                {openStatus.isOpen ? "Ouvert" : "Fermé"}
+                                                {openStatus.detail ? ` · ${openStatus.detail}` : ""}
+                                            </Text>
+                                        </View>
+                                    )}
+                                </View>
+                                {restaurant.opening_hours ? (
+                                    <Text style={[styles.infoValue, { color: colors.text }]}>
+                                        {restaurant.opening_hours}
+                                    </Text>
+                                ) : null}
                             </View>
                         </View>
                     )}
@@ -460,6 +543,12 @@ export default function RestaurantDetailScreen() {
                             </TouchableOpacity>
                         )}
                     </View>
+
+                    {/* Signaler une erreur */}
+                    <TouchableOpacity onPress={handleReportError} style={styles.reportBtn} activeOpacity={0.7}>
+                        <Ionicons name="flag-outline" size={15} color={palette.gray500} />
+                        <Text style={styles.reportText}>Une info est incorrecte ? Signale-le</Text>
+                    </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>
 
@@ -574,6 +663,72 @@ const styles = StyleSheet.create({
         fontWeight: "500",
         color: palette.gray500,
         flex: 1,
+    },
+    tagsRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 7,
+        marginTop: 4,
+    },
+    catChip: {
+        backgroundColor: palette.orangeSoft,
+        paddingHorizontal: 11,
+        paddingVertical: 6,
+        borderRadius: 20,
+    },
+    catChipText: {
+        fontSize: 12.5,
+        fontWeight: "700",
+        color: "#9A3412",
+    },
+    tagChip: {
+        backgroundColor: "#F1F5F9",
+        paddingHorizontal: 11,
+        paddingVertical: 6,
+        borderRadius: 20,
+    },
+    tagChipText: {
+        fontSize: 12.5,
+        fontWeight: "600",
+        color: "#475569",
+    },
+    hoursLabelRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 3,
+        flexWrap: "wrap",
+    },
+    openPill: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 5,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 12,
+    },
+    openDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+    },
+    openPillText: {
+        fontSize: 11.5,
+        fontWeight: "700",
+    },
+    reportBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+        paddingVertical: 16,
+        marginTop: 8,
+    },
+    reportText: {
+        fontSize: 13,
+        fontWeight: "600",
+        color: palette.gray500,
+        textDecorationLine: "underline",
     },
 
     // Actions
