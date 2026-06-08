@@ -4,7 +4,7 @@ import { Colors } from "@/constants/Colors"
 interface ButtonProps {
     title: string
     onPress: () => void
-    variant?: "primary" | "secondary"
+    variant?: "primary" | "secondary" | "outline"
     loading?: boolean
     disabled?: boolean
     style?: ViewStyle
@@ -20,26 +20,18 @@ export function Button({ title, onPress, variant = "primary", loading = false, d
             disabled={disabled || loading}
             style={[
                 styles.button,
-                {
-                    backgroundColor: isPrimary ? colors.primary : colors.surface,
-                    borderColor: colors.border,
-                },
+                isPrimary
+                    ? { backgroundColor: colors.primary }
+                    : { backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: colors.border },
                 (disabled || loading) && styles.disabled,
                 style,
             ]}
-            activeOpacity={0.7}
+            activeOpacity={0.85}
         >
             {loading ? (
                 <ActivityIndicator color={isPrimary ? "#FFFFFF" : colors.primary} />
             ) : (
-                <Text
-                    style={[
-                        styles.text,
-                        {
-                            color: isPrimary ? "#FFFFFF" : colors.text,
-                        },
-                    ]}
-                >
+                <Text style={[styles.text, { color: isPrimary ? "#FFFFFF" : colors.text }]}>
                     {title}
                 </Text>
             )}
@@ -49,19 +41,18 @@ export function Button({ title, onPress, variant = "primary", loading = false, d
 
 const styles = StyleSheet.create({
     button: {
-        paddingVertical: 12,
+        paddingVertical: 14,
         paddingHorizontal: 24,
-        borderRadius: 10,
-        borderWidth: 1,
+        borderRadius: 16,
         alignItems: "center",
         justifyContent: "center",
-        minHeight: 48,
+        minHeight: 52,
     },
     disabled: {
         opacity: 0.5,
     },
     text: {
         fontSize: 16,
-        fontWeight: "600",
+        fontWeight: "700",
     },
 })

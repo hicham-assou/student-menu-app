@@ -145,3 +145,11 @@ expo-env.d.ts
 # @end expo-cli
 
 .expo/
+
+# Android signing keystores (NE JAMAIS committer)
+*.jks
+*.keystore
+
+# Editor / tooling
+.vscode/
+.claude/

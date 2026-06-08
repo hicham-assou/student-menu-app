@@ -165,7 +165,7 @@ export function RestaurantPreviewCard({
 const styles = StyleSheet.create({
     card: {
         position: "absolute",
-        bottom: 24,
+        bottom: 100,
         left: 16,
         right: 16,
         backgroundColor: "#FFF",

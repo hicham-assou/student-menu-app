@@ -6,7 +6,6 @@ import { Colors } from "@/constants/Colors"
 import { deleteReview } from "@/lib/reviews"
 import { useAuth } from "@/contexts/AuthContext"
 import { CustomAlertManager } from "@/components/customAlert/CustomAlert"
-import {supabase} from "@/lib/supabase";
 
 interface ReviewCardProps {
     review: Review
@@ -23,7 +22,7 @@ export function ReviewCard({ review, onDeleted, onEdit }: ReviewCardProps) {
         CustomAlertManager.alert(
             "Supprimer l'avis",
             "Es-tu sûr de vouloir supprimer cet avis ?", "confirm", [
-            {text: "Annuler", style: "cancel"},
+            { text: "Annuler", style: "cancel" },
             {
                 text: "Supprimer",
                 style: "destructive",
@@ -46,7 +45,7 @@ export function ReviewCard({ review, onDeleted, onEdit }: ReviewCardProps) {
         if (days === 0) return "Aujourd'hui"
         if (days === 1) return "Hier"
         if (days < 7) return `Il y a ${days} jours`
-        if (days < 30) return `Il y a ${Math.floor(days / 7)} semaines`
+        if (days < 30) return `Il y a ${Math.floor(days / 7)} sem.`
         if (days < 365) return `Il y a ${Math.floor(days / 30)} mois`
         return `Il y a ${Math.floor(days / 365)} ans`
     }
@@ -61,7 +60,7 @@ export function ReviewCard({ review, onDeleted, onEdit }: ReviewCardProps) {
     }
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={styles.container}>
             <View style={styles.header}>
                 <View style={styles.userInfo}>
                     {review.user?.avatar_url ? (
@@ -72,33 +71,33 @@ export function ReviewCard({ review, onDeleted, onEdit }: ReviewCardProps) {
                         </View>
                     )}
                     <View style={styles.userDetails}>
-                        <Text style={[styles.userName, { color: colors.text }]}>{review.user?.full_name || "Utilisateur"}</Text>
-                        <Text style={[styles.date, { color: colors.textSecondary }]}>{formatDate(review.created_at)}</Text>
+                        <Text style={[styles.userName, { color: colors.text }]}>
+                            {review.user?.full_name || "Utilisateur"}
+                        </Text>
+                        <Text style={[styles.date, { color: colors.textSecondary }]}>
+                            {formatDate(review.created_at)}
+                        </Text>
                     </View>
                 </View>
 
-                <View style={styles.ratingContainer}>
-                    {Array.from({ length: 5 }).map((_, index) => (
-                        <Ionicons
-                            key={index}
-                            name={index < review.rating ? "star" : "star-outline"}
-                            size={16}
-                            color={index < review.rating ? "#FFA500" : colors.border}
-                        />
-                    ))}
+                <View style={styles.ratingBadge}>
+                    <Ionicons name="star" size={12} color="#F59E0B" />
+                    <Text style={styles.ratingBadgeText}>{review.rating.toFixed(1)}</Text>
                 </View>
             </View>
 
-            {review.comment && <Text style={[styles.comment, { color: colors.text }]}>{review.comment}</Text>}
+            {review.comment ? (
+                <Text style={[styles.comment, { color: colors.text }]}>{review.comment}</Text>
+            ) : null}
 
             {isOwnReview && (
                 <View style={styles.actions}>
-                    <TouchableOpacity onPress={onEdit} style={styles.actionButton}>
-                        <Ionicons name="create-outline" size={18} color={colors.primary} />
+                    <TouchableOpacity onPress={onEdit} style={styles.actionButton} activeOpacity={0.7}>
+                        <Ionicons name="create-outline" size={16} color={colors.primary} />
                         <Text style={[styles.actionText, { color: colors.primary }]}>Modifier</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={handleDelete} style={styles.actionButton}>
-                        <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                    <TouchableOpacity onPress={handleDelete} style={styles.actionButton} activeOpacity={0.7}>
+                        <Ionicons name="trash-outline" size={16} color="#EF4444" />
                         <Text style={[styles.actionText, { color: "#EF4444" }]}>Supprimer</Text>
                     </TouchableOpacity>
                 </View>
@@ -109,16 +108,20 @@ export function ReviewCard({ review, onDeleted, onEdit }: ReviewCardProps) {
 
 const styles = StyleSheet.create({
     container: {
+        backgroundColor: "#FFFFFF",
         padding: 16,
-        borderRadius: 12,
-        borderWidth: 1,
+        borderRadius: 18,
         marginBottom: 12,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+        elevation: 1,
     },
     header: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 8,
     },
     userInfo: {
         flexDirection: "row",
@@ -126,15 +129,15 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     avatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 42,
+        height: 42,
+        borderRadius: 21,
         marginRight: 12,
     },
     avatarPlaceholder: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 42,
+        height: 42,
+        borderRadius: 21,
         marginRight: 12,
         justifyContent: "center",
         alignItems: "center",
@@ -142,43 +145,53 @@ const styles = StyleSheet.create({
     avatarText: {
         color: "#FFFFFF",
         fontSize: 16,
-        fontWeight: "600",
+        fontWeight: "700",
     },
     userDetails: {
         flex: 1,
     },
     userName: {
         fontSize: 15,
-        fontWeight: "600",
+        fontWeight: "700",
         marginBottom: 2,
     },
     date: {
-        fontSize: 12,
+        fontSize: 12.5,
     },
-    ratingContainer: {
+    ratingBadge: {
         flexDirection: "row",
-        gap: 2,
+        alignItems: "center",
+        gap: 3,
+        backgroundColor: "#FEF3C7",
+        paddingHorizontal: 9,
+        paddingVertical: 5,
+        borderRadius: 20,
+    },
+    ratingBadgeText: {
+        fontSize: 12.5,
+        fontWeight: "700",
+        color: "#B45309",
     },
     comment: {
-        fontSize: 14,
-        lineHeight: 20,
-        marginTop: 8,
+        fontSize: 14.5,
+        lineHeight: 21,
+        marginTop: 12,
     },
     actions: {
         flexDirection: "row",
-        gap: 16,
-        marginTop: 12,
+        gap: 18,
+        marginTop: 14,
         paddingTop: 12,
         borderTopWidth: 1,
-        borderTopColor: "#E2E8F0",
+        borderTopColor: "#F2EEE9",
     },
     actionButton: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 4,
+        gap: 5,
     },
     actionText: {
-        fontSize: 14,
-        fontWeight: "500",
+        fontSize: 13.5,
+        fontWeight: "600",
     },
 })

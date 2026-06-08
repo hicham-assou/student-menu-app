@@ -155,14 +155,15 @@ export default function MapScreen() {
 
     const handleMarkerPress = (restaurant: Restaurant) => {
         setSelectedId(restaurant.id)
-        mapRef.current?.animateToRegion(
+        // Recentre sur le pin SANS changer le zoom (evite le saut de zoom brusque)
+        mapRef.current?.animateCamera(
             {
-                latitude: restaurant.latitude,
-                longitude: restaurant.longitude,
-                latitudeDelta: LATITUDE_DELTA / 2.5,
-                longitudeDelta: LONGITUDE_DELTA / 2.5,
+                center: {
+                    latitude: restaurant.latitude,
+                    longitude: restaurant.longitude,
+                },
             },
-            300,
+            { duration: 300 },
         )
     }
 
@@ -360,7 +361,7 @@ const styles = StyleSheet.create({
     },
     locationFab: {
         position: "absolute",
-        bottom: 30,
+        bottom: 106,
         right: 16,
         width: 50,
         height: 50,
@@ -376,11 +377,11 @@ const styles = StyleSheet.create({
     },
     locationFabRaised: {
         // Quand la card du resto est visible, on remonte le FAB au-dessus
-        bottom: 320,
+        bottom: 390,
     },
     legendWrapper: {
         position: "absolute",
-        bottom: 30,
+        bottom: 106,
         left: 16,
     },
     emptyOverlay: {

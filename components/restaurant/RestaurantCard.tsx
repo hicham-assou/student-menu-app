@@ -1,12 +1,10 @@
 "use client"
 
-import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
-import { Colors } from "@/constants/Colors"
 import type { Restaurant } from "@/types"
-
-const { width } = Dimensions.get("window")
 
 interface RestaurantCardProps {
     restaurant: Restaurant
@@ -16,223 +14,202 @@ interface RestaurantCardProps {
 
 export function RestaurantCard({ restaurant, isFavorite, onToggleFavorite }: RestaurantCardProps) {
     const router = useRouter()
-    const colors = Colors.light
 
     const getMinMenuPrice = () => {
         if (!restaurant.student_menu || restaurant.student_menu.length === 0) return null
-
         const prices = restaurant.student_menu.map((menu) => {
             const priceStr = menu.price.replace("€", "").replace(",", ".").trim()
             return Number.parseFloat(priceStr)
         })
-
         const minPrice = Math.min(...prices)
         return isNaN(minPrice) ? null : minPrice
     }
 
     const minPrice = getMinMenuPrice()
+    const menuCount = restaurant.student_menu?.length ?? 0
 
     return (
         <TouchableOpacity
-            activeOpacity={0.8}
+            activeOpacity={0.92}
             onPress={() => router.push(`/restaurant/${restaurant.id}`)}
-            style={[styles.card, { backgroundColor: colors.surface }]}
+            style={styles.card}
         >
-            <View style={styles.imageWrapper}>
-                <View style={styles.imageContainer}>
-                    {restaurant.image ? (
-                        <Image source={{ uri: restaurant.image }} style={styles.image} resizeMode="cover" />
-                    ) : (
-                        <View style={[styles.imagePlaceholder, { backgroundColor: colors.primary + "20" }]}>
-                            <Ionicons name="restaurant" size={50} color={colors.primary} />
-                        </View>
-                    )}
-
-                    {minPrice !== null && (
-                        <View style={styles.priceTagContainer}>
-                            <View style={[styles.priceTag, { backgroundColor: colors.primary }]}>
-                                <Text style={styles.priceDes}>dès</Text>
-                                <Text style={styles.priceAmount}>{minPrice.toFixed(2).replace(".", ",")}€</Text>
-                                <View style={[styles.priceTriangle, { borderTopColor: colors.primary }]} />
-                            </View>
-                        </View>
-                    )}
-
-                    <TouchableOpacity
-                        style={[styles.favoriteButton, { backgroundColor: "rgba(255, 255, 255, 0.98)" }]}
-                        onPress={onToggleFavorite}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons
-                            name={isFavorite ? "heart" : "heart-outline"}
-                            size={20}
-                            color={isFavorite ? "#EF4444" : colors.textSecondary}
-                        />
-                    </TouchableOpacity>
+            {/* Image ou placeholder */}
+            {restaurant.image ? (
+                <Image source={{ uri: restaurant.image }} style={styles.image} resizeMode="cover" />
+            ) : (
+                <View style={styles.placeholder}>
+                    <Ionicons name="restaurant" size={52} color="rgba(255,255,255,0.55)" />
                 </View>
-            </View>
+            )}
 
-            <View style={styles.content}>
-                <View style={styles.titleSection}>
-                    <Text style={[styles.name, { color: colors.text }]} numberOfLines={2}>
-                        {restaurant.name}
+            {/* Gradient overlay bas */}
+            <LinearGradient
+                colors={["transparent", "rgba(0,0,0,0.22)", "rgba(0,0,0,0.78)"]}
+                locations={[0.3, 0.6, 1]}
+                style={styles.gradient}
+            />
+
+            {/* Bouton favori — haut droite */}
+            <TouchableOpacity
+                style={styles.heartBtn}
+                onPress={onToggleFavorite}
+                activeOpacity={0.75}
+                hitSlop={8}
+            >
+                <Ionicons
+                    name={isFavorite ? "heart" : "heart-outline"}
+                    size={19}
+                    color={isFavorite ? "#EF4444" : "#FFFFFF"}
+                />
+            </TouchableOpacity>
+
+            {/* Badge nombre de menus — haut gauche */}
+            {menuCount > 0 && (
+                <View style={styles.menuBadge}>
+                    <Ionicons name="restaurant" size={11} color="#F97316" />
+                    <Text style={styles.menuBadgeText}>
+                        {menuCount} menu{menuCount > 1 ? "s" : ""}
                     </Text>
                 </View>
+            )}
 
-                <View style={styles.infoSection}>
-                    <View style={[styles.infoPill, { backgroundColor: colors.primary + "12" }]}>
-                        <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
-                            <Ionicons name="location-sharp" size={12} color="#FFFFFF" />
-                        </View>
-                        <Text style={[styles.pillText, { color: colors.text }]} numberOfLines={1}>
+            {/* Infos en bas */}
+            <View style={styles.info}>
+                <View style={styles.infoLeft}>
+                    <Text style={styles.name} numberOfLines={1}>
+                        {restaurant.name}
+                    </Text>
+                    <View style={styles.cityRow}>
+                        <Ionicons name="location-sharp" size={11} color="rgba(255,255,255,0.7)" />
+                        <Text style={styles.city} numberOfLines={1}>
                             {restaurant.city}
                         </Text>
                     </View>
-
-                    {restaurant.student_menu && restaurant.student_menu.length > 0 && (
-                        <View style={[styles.infoPill, { backgroundColor: colors.primary + "12" }]}>
-                            <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
-                                <Ionicons name="fast-food" size={12} color="#FFFFFF" />
-                            </View>
-                            <Text style={[styles.pillText, { color: colors.text }]}>
-                                {restaurant.student_menu.length} menu{restaurant.student_menu.length > 1 ? "s" : ""}
-                            </Text>
-                        </View>
-                    )}
                 </View>
+
+                {minPrice !== null && (
+                    <View style={styles.pricePill}>
+                        <Text style={styles.priceFrom}>dès</Text>
+                        <Text style={styles.priceValue}>
+                            {minPrice.toFixed(2).replace(".", ",")}€
+                        </Text>
+                    </View>
+                )}
             </View>
         </TouchableOpacity>
     )
 }
 
+
 const styles = StyleSheet.create({
     card: {
-        borderRadius: 20,
-        marginBottom: 12,
-        marginHorizontal: 4,
-        overflow: "visible",
-        shadowColor: "#6366F1",
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.12,
-        shadowRadius: 12,
-        elevation: 6,
-    },
-    imageWrapper: {
+        borderRadius: 24,
         overflow: "hidden",
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-    },
-    imageContainer: {
-        width: "100%",
-        height: 160,
-        position: "relative",
+        height: 210,
+        backgroundColor: "#E8D5C4",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 5,
     },
     image: {
         width: "100%",
         height: "100%",
     },
-    imagePlaceholder: {
+    placeholder: {
         width: "100%",
         height: "100%",
+        backgroundColor: "#D4A27A",
         justifyContent: "center",
         alignItems: "center",
     },
-    priceTagContainer: {
+    gradient: {
         position: "absolute",
-        top: 14,
         left: 0,
+        right: 0,
+        bottom: 0,
+        height: "75%",
     },
-    priceTag: {
-        paddingVertical: 8,
-        paddingLeft: 14,
-        paddingRight: 16,
-        borderTopRightRadius: 14,
-        borderBottomRightRadius: 14,
-        flexDirection: "row",
-        alignItems: "baseline",
-        gap: 4,
-        shadowColor: "#000",
-        shadowOffset: { width: 2, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 6,
-        elevation: 6,
-    },
-    priceTriangle: {
-        position: "absolute",
-        bottom: -6,
-        left: 0,
-        width: 0,
-        height: 0,
-        borderLeftWidth: 6,
-        borderLeftColor: "transparent",
-        borderTopWidth: 6,
-        opacity: 0.7,
-    },
-    priceDes: {
-        color: "#FFFFFF",
-        fontSize: 11,
-        fontWeight: "600",
-        opacity: 0.95,
-    },
-    priceAmount: {
-        color: "#FFFFFF",
-        fontSize: 18,
-        fontWeight: "900",
-        letterSpacing: -0.6,
-    },
-    favoriteButton: {
+    heartBtn: {
         position: "absolute",
         top: 14,
         right: 14,
-        width: 38,
-        height: 38,
-        borderRadius: 19,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: "rgba(0,0,0,0.3)",
         justifyContent: "center",
         alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.2,
-        shadowRadius: 6,
-        elevation: 5,
     },
-    content: {
-        padding: 14,
-        paddingTop: 12,
+    menuBadge: {
+        position: "absolute",
+        top: 14,
+        left: 14,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 5,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 20,
+        backgroundColor: "rgba(255,255,255,0.92)",
     },
-    titleSection: {
-        marginBottom: 10,
+    menuBadgeText: {
+        fontSize: 11.5,
+        fontWeight: "700",
+        color: "#1C1917",
+    },
+    info: {
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        flexDirection: "row",
+        alignItems: "flex-end",
+        justifyContent: "space-between",
+        paddingHorizontal: 16,
+        paddingBottom: 16,
+        paddingTop: 10,
+        gap: 10,
+    },
+    infoLeft: {
+        flex: 1,
+        gap: 4,
     },
     name: {
         fontSize: 18,
         fontWeight: "800",
-        letterSpacing: -0.4,
-        lineHeight: 23,
+        color: "#FFFFFF",
+        letterSpacing: -0.3,
     },
-    infoSection: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        gap: 8,
-        marginBottom: 12,
-    },
-    infoPill: {
+    cityRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 6,
+        gap: 4,
+    },
+    city: {
+        fontSize: 12.5,
+        fontWeight: "500",
+        color: "rgba(255,255,255,0.75)",
+    },
+    pricePill: {
+        flexDirection: "row",
+        alignItems: "baseline",
+        gap: 3,
+        paddingHorizontal: 12,
         paddingVertical: 6,
-        paddingHorizontal: 10,
-        paddingRight: 12,
-        borderRadius: 16,
+        borderRadius: 20,
+        backgroundColor: "#F97316",
     },
-    iconCircle: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    pillText: {
-        fontSize: 13,
+    priceFrom: {
+        fontSize: 11,
         fontWeight: "600",
-        maxWidth: 140,
+        color: "rgba(255,255,255,0.85)",
+    },
+    priceValue: {
+        fontSize: 16,
+        fontWeight: "800",
+        color: "#FFFFFF",
     },
 })

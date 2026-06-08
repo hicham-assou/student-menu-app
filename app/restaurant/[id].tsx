@@ -1,5 +1,4 @@
 import {
-    Animated,
     Dimensions,
     Image,
     Keyboard,
@@ -34,26 +33,19 @@ import type { Restaurant, Review } from "@/types"
 import { LinearGradient } from "expo-linear-gradient"
 
 const { width } = Dimensions.get("window")
-const MENU_CARD_WIDTH = width * 0.72
-const MENU_CARD_SPACING = 14
+const MENU_CARD_WIDTH = width * 0.66
+const MENU_CARD_SPACING = 12
 
 const palette = {
     orange: "#F97316",
-    orangeLight: "#FDBA74",
-    orangeSoft: "#FFF7ED",
+    orangeSoft: "#FFF1E8",
     amber: "#F59E0B",
     amberSoft: "#FEF3C7",
-    dark: "#1C1917",
-    darkSoft: "#292524",
-    gray50: "#FAFAF9",
-    gray100: "#F5F5F4",
-    gray200: "#E7E5E4",
+    gray200: "#ECE7E1",
     gray400: "#A8A29E",
     gray500: "#78716C",
-    gray600: "#57534E",
     white: "#FFFFFF",
     red: "#EF4444",
-    green: "#22C55E",
 }
 
 export default function RestaurantDetailScreen() {
@@ -75,10 +67,8 @@ export default function RestaurantDetailScreen() {
     const [isOwner, setIsOwner] = useState(false)
     const [activeMenuIndex, setActiveMenuIndex] = useState(0)
 
-    const scrollY = useRef(new Animated.Value(0)).current
     const menuScrollRef = useRef<ScrollView>(null)
     const mainScrollRef = useRef<ScrollView>(null)
-    const reviewFormRef = useRef<View>(null)
 
     const loadRestaurant = useCallback(async () => {
         if (!id) return
@@ -156,14 +146,12 @@ export default function RestaurantDetailScreen() {
         }
     }, [id])
 
-    // Scroll vers le formulaire d'avis quand le clavier s'ouvre
     useEffect(() => {
         const keyboardDidShow = Keyboard.addListener("keyboardDidShow", () => {
             if (showReviewForm && mainScrollRef.current) {
-                (mainScrollRef.current as any)?.scrollToEnd({ animated: true })
+                mainScrollRef.current.scrollToEnd({ animated: true })
             }
         })
-
         return () => {
             keyboardDidShow.remove()
         }
@@ -190,11 +178,8 @@ export default function RestaurantDetailScreen() {
             return
         }
         setShowReviewForm(true)
-        // Scroll vers le formulaire apres un court delai
         setTimeout(() => {
-            if (mainScrollRef.current) {
-                (mainScrollRef.current as any)?.scrollToEnd({ animated: true })
-            }
+            mainScrollRef.current?.scrollToEnd({ animated: true })
         }, 300)
     }
 
@@ -252,14 +237,11 @@ export default function RestaurantDetailScreen() {
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
             >
-                <Animated.ScrollView
+                <ScrollView
                     ref={mainScrollRef}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
-                    onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-                        useNativeDriver: true,
-                    })}
-                    scrollEventThrottle={16}
+                    contentContainerStyle={styles.scrollContent}
                     refreshControl={
                         <RefreshControl
                             refreshing={loading}
@@ -269,130 +251,89 @@ export default function RestaurantDetailScreen() {
                         />
                     }
                 >
-                    {/* Hero Image */}
-                    <View style={styles.heroContainer}>
-                        <Animated.Image
+                    {/* Image card */}
+                    <View style={styles.imageCard}>
+                        <Image
                             source={{
                                 uri:
                                     restaurant.image ||
                                     `https://placehold.co/800x400/F97316/FFFFFF?text=${encodeURIComponent(restaurant.name)}`,
                             }}
-                            style={[
-                                styles.heroImage,
-                                {
-                                    transform: [
-                                        {
-                                            translateY: scrollY.interpolate({
-                                                inputRange: [-200, 0, 200],
-                                                outputRange: [-50, 0, 40],
-                                                extrapolate: "clamp",
-                                            }),
-                                        },
-                                        {
-                                            scale: scrollY.interpolate({
-                                                inputRange: [-200, 0],
-                                                outputRange: [1.4, 1],
-                                                extrapolateRight: "clamp",
-                                            }),
-                                        },
-                                    ],
-                                },
-                            ]}
+                            style={styles.heroImage}
                             resizeMode="cover"
                         />
-                        <LinearGradient
-                            colors={["transparent", "rgba(0,0,0,0.75)"]}
-                            style={styles.heroGradient}
-                        />
+                        <LinearGradient colors={["transparent", "rgba(0,0,0,0.45)"]} style={styles.imageGradient} />
 
-                        <View style={styles.heroTopBar}>
-                            <View style={{ flex: 1 }} />
-                            <View style={styles.heroTopRight}>
-                                {isOwner && (
-                                    <TouchableOpacity onPress={() => router.push(`/owner/edit/${id}`)} style={styles.heroBtn}>
-                                        <Ionicons name="create-outline" size={20} color={palette.white} />
-                                    </TouchableOpacity>
-                                )}
-                                <TouchableOpacity onPress={handleToggleFavorite} style={styles.heroBtn}>
-                                    <Ionicons
-                                        name={isFav ? "heart" : "heart-outline"}
-                                        size={22}
-                                        color={isFav ? palette.red : palette.white}
-                                    />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-
-                        <View style={styles.heroBottom}>
-                            <Text style={styles.heroName}>{restaurant.name}</Text>
-                            {stats.total > 0 && (
-                                <View style={styles.heroRating}>
-                                    <Ionicons name="star" size={14} color={palette.amber} />
-                                    <Text style={styles.heroRatingText}>{stats.average.toFixed(1)}</Text>
-                                    <Text style={styles.heroRatingCount}>({stats.total} avis)</Text>
-                                </View>
-                            )}
-                        </View>
-                    </View>
-
-                    {/* Floating Info Card */}
-                    <View style={styles.floatingCard}>
-                        <View style={styles.infoGrid}>
-                            <View style={styles.infoItem}>
-                                <View style={[styles.infoIconCircle, { backgroundColor: palette.orangeSoft }]}>
-                                    <Ionicons name="location" size={18} color={palette.orange} />
-                                </View>
-                                <View style={styles.infoItemContent}>
-                                    <Text style={styles.infoLabel}>Adresse</Text>
-                                    <Text style={[styles.infoValue, { color: colors.text }]} numberOfLines={1}>
-                                        {restaurant.address}, {restaurant.city}
-                                    </Text>
-                                </View>
-                            </View>
-                            <View style={styles.infoItem}>
-                                <View style={[styles.infoIconCircle, { backgroundColor: palette.orangeSoft }]}>
-                                    <Ionicons name="time" size={18} color={palette.orange} />
-                                </View>
-                                <View style={styles.infoItemContent}>
-                                    <Text style={styles.infoLabel}>Horaires</Text>
-                                    <Text style={[styles.infoValue, { color: colors.text }]}>{restaurant.opening_hours}</Text>
-                                </View>
-                            </View>
-                        </View>
-
-                        <View style={styles.actionRow}>
-                            {restaurant.phone && (
-                                <TouchableOpacity onPress={handleCall} style={styles.actionBtnCall} activeOpacity={0.8}>
-                                    <Ionicons name="call" size={18} color={palette.white} />
-                                    <Text style={styles.actionBtnCallText}>Appeler</Text>
+                        <View style={styles.imageActions}>
+                            {isOwner && (
+                                <TouchableOpacity onPress={() => router.push(`/owner/edit/${id}`)} style={styles.imageBtn}>
+                                    <Ionicons name="create-outline" size={19} color={palette.white} />
                                 </TouchableOpacity>
                             )}
-                            <TouchableOpacity onPress={handleDirections} style={styles.actionBtnDir} activeOpacity={0.8}>
-                                <Ionicons name="navigate" size={18} color={palette.orange} />
-                                <Text style={styles.actionBtnDirText}>Itineraire</Text>
+                            <TouchableOpacity onPress={handleToggleFavorite} style={styles.imageBtn}>
+                                <Ionicons
+                                    name={isFav ? "heart" : "heart-outline"}
+                                    size={20}
+                                    color={isFav ? palette.red : palette.white}
+                                />
                             </TouchableOpacity>
                         </View>
+
+                        {stats.total > 0 && (
+                            <View style={styles.ratingPill}>
+                                <Ionicons name="star" size={13} color={palette.amber} />
+                                <Text style={styles.ratingPillScore}>{stats.average.toFixed(1)}</Text>
+                                <Text style={styles.ratingPillCount}>· {stats.total} avis</Text>
+                            </View>
+                        )}
                     </View>
 
-                    {/* Student Menu Section */}
-                    {restaurant.student_menu && restaurant.student_menu.length > 0 && (
-                        <View style={styles.menuSection}>
-                            <View style={styles.menuSectionHeader}>
-                                <View>
-                                    <View style={styles.menuTitleRow}>
-                                        <View style={[styles.menuIconBg, { backgroundColor: palette.orangeSoft }]}>
-                                            <Ionicons name="school" size={20} color={palette.orange} />
-                                        </View>
-                                        <Text style={[styles.menuSectionTitle, { color: colors.text }]}>Menus Etudiants</Text>
-                                    </View>
-                                    <Text style={styles.menuSubtitle}>
-                                        {sortedMenus.length} menu{sortedMenus.length > 1 ? "s" : ""} disponible{sortedMenus.length > 1 ? "s" : ""}
-                                    </Text>
-                                </View>
-                                <View style={styles.offreBadge}>
-                                    <Ionicons name="flash" size={12} color={palette.amber} />
-                                    <Text style={styles.offreBadgeText}>Offre speciale</Text>
-                                </View>
+                    {/* Title + address */}
+                    <View style={styles.titleBlock}>
+                        <Text style={[styles.name, { color: colors.text }]}>{restaurant.name}</Text>
+                        <View style={styles.addressRow}>
+                            <Ionicons name="location-outline" size={15} color={palette.gray500} />
+                            <Text style={styles.addressText} numberOfLines={1}>
+                                {restaurant.address}, {restaurant.city}
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Action buttons */}
+                    <View style={styles.actionRow}>
+                        {restaurant.phone && (
+                            <TouchableOpacity onPress={handleCall} style={styles.actionBtnPrimary} activeOpacity={0.85}>
+                                <Ionicons name="call" size={17} color={palette.white} />
+                                <Text style={styles.actionBtnPrimaryText}>Appeler</Text>
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity onPress={handleDirections} style={styles.actionBtnSecondary} activeOpacity={0.85}>
+                            <Ionicons name="navigate" size={17} color={palette.orange} />
+                            <Text style={styles.actionBtnSecondaryText}>Itinéraire</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Horaires */}
+                    {restaurant.opening_hours && (
+                        <View style={styles.infoCard}>
+                            <View style={styles.infoIcon}>
+                                <Ionicons name="time-outline" size={20} color={palette.orange} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.infoLabel}>Horaires</Text>
+                                <Text style={[styles.infoValue, { color: colors.text }]}>{restaurant.opening_hours}</Text>
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Menus étudiants */}
+                    {sortedMenus.length > 0 && (
+                        <View style={styles.section}>
+                            <View style={styles.sectionHead}>
+                                <Text style={[styles.sectionTitle, { color: colors.text }]}>Menus étudiants</Text>
+                                <Text style={styles.sectionCount}>
+                                    {sortedMenus.length} menu{sortedMenus.length > 1 ? "s" : ""}
+                                </Text>
                             </View>
 
                             <ScrollView
@@ -406,53 +347,26 @@ export default function RestaurantDetailScreen() {
                                 scrollEventThrottle={16}
                             >
                                 {sortedMenus.map((item, index) => (
-                                    <View key={index} style={styles.menuCardOuter}>
-                                        <View
-                                            style={[
-                                                styles.menuCard,
-                                                {
-                                                    backgroundColor: colors.surface || palette.white,
-                                                },
-                                            ]}
-                                        >
-                                            {item.image_url ? (
-                                                <View style={styles.menuCardImageWrap}>
-                                                    <Image source={{ uri: item.image_url }} style={styles.menuCardImage} resizeMode="cover" />
-                                                    <View style={styles.menuPriceFloat}>
-                                                        <Text style={styles.menuPriceFloatText}>{item.price}</Text>
-                                                    </View>
-                                                </View>
-                                            ) : (
-                                                <View style={[styles.menuCardImageWrap, styles.menuCardPlaceholder]}>
-                                                    <View style={styles.menuPlaceholderInner}>
-                                                        <Ionicons name="restaurant" size={36} color={palette.orange} />
-                                                    </View>
-                                                    <View style={styles.menuPriceFloat}>
-                                                        <Text style={styles.menuPriceFloatText}>{item.price}</Text>
-                                                    </View>
-                                                </View>
-                                            )}
-
-                                            <View style={styles.menuCardBody}>
-                                                <View style={styles.menuTagRow}>
-                                                    <View style={[styles.menuTag, { backgroundColor: palette.orangeSoft }]}>
-                                                        <Text style={[styles.menuTagText, { color: palette.orange }]}>Menu #{index + 1}</Text>
-                                                    </View>
-                                                    <View style={[styles.menuTag, { backgroundColor: palette.amberSoft }]}>
-                                                        <Ionicons name="flash" size={11} color={palette.amber} />
-                                                        <Text style={[styles.menuTagText, { color: "#92400E" }]}>Bon plan</Text>
-                                                    </View>
-                                                </View>
-
-                                                <Text style={[styles.menuCardTitle, { color: colors.text }]} numberOfLines={3}>
-                                                    {item.title}
-                                                </Text>
-
-                                                <View style={styles.menuCardFooter}>
-                                                    <Text style={styles.menuCardPriceLabel}>Prix etudiant</Text>
-                                                    <Text style={[styles.menuCardPriceValue, { color: palette.orange }]}>{item.price}</Text>
+                                    <View key={index} style={styles.menuCard}>
+                                        {item.image_url ? (
+                                            <View style={styles.menuImageWrap}>
+                                                <Image source={{ uri: item.image_url }} style={styles.menuImage} resizeMode="cover" />
+                                                <View style={styles.menuPriceFloat}>
+                                                    <Text style={styles.menuPriceFloatText}>{item.price}</Text>
                                                 </View>
                                             </View>
+                                        ) : (
+                                            <View style={[styles.menuImageWrap, styles.menuPlaceholder]}>
+                                                <Ionicons name="fast-food-outline" size={34} color={palette.orange} />
+                                                <View style={styles.menuPriceFloat}>
+                                                    <Text style={styles.menuPriceFloatText}>{item.price}</Text>
+                                                </View>
+                                            </View>
+                                        )}
+                                        <View style={styles.menuBody}>
+                                            <Text style={[styles.menuTitle, { color: colors.text }]} numberOfLines={2}>
+                                                {item.title}
+                                            </Text>
                                         </View>
                                     </View>
                                 ))}
@@ -466,66 +380,61 @@ export default function RestaurantDetailScreen() {
                                             style={[
                                                 styles.dot,
                                                 i === activeMenuIndex
-                                                    ? { backgroundColor: palette.orange, width: 20 }
-                                                    : { backgroundColor: palette.gray200, width: 8 },
+                                                    ? { backgroundColor: palette.orange, width: 18 }
+                                                    : { backgroundColor: palette.gray200, width: 7 },
                                             ]}
                                         />
                                     ))}
                                 </View>
                             )}
 
-                            <View style={styles.studentCardInfo}>
-                                <Ionicons name="card-outline" size={18} color={palette.orange} />
-                                <Text style={[styles.studentCardInfoText, { color: colors.text }]}>
-                                    Presente ta carte etudiante pour beneficier de ces prix
+                            <View style={styles.cardHint}>
+                                <Ionicons name="card-outline" size={17} color={palette.orange} />
+                                <Text style={styles.cardHintText}>
+                                    Présente ta carte étudiante pour bénéficier de ces prix
                                 </Text>
                             </View>
                         </View>
                     )}
 
-                    {/* Description */}
+                    {/* À propos */}
                     {restaurant.description && (
-                        <View style={styles.descSection}>
-                            <Text style={[styles.descTitle, { color: colors.text }]}>A propos</Text>
-                            <Text style={[styles.descText, { color: colors.textSecondary }]}>{restaurant.description}</Text>
+                        <View style={styles.section}>
+                            <Text style={[styles.sectionTitle, { color: colors.text }]}>À propos</Text>
+                            <Text style={styles.descText}>{restaurant.description}</Text>
                         </View>
                     )}
 
-                    <View style={[styles.divider, { backgroundColor: colors.border || palette.gray200 }]} />
-
-                    {/* Reviews Section */}
-                    <View style={styles.reviewsSection}>
-                        <View style={styles.reviewsHeader}>
-                            <View>
-                                <Text style={[styles.reviewsTitle, { color: colors.text }]}>
-                                    Avis {stats.total > 0 && `(${stats.total})`}
-                                </Text>
-                            </View>
-                            <TouchableOpacity onPress={handleAddReview} style={styles.addReviewBtn} activeOpacity={0.8}>
-                                <Ionicons name="add" size={18} color={palette.white} />
-                                <Text style={styles.addReviewBtnText}>Ajouter</Text>
+                    {/* Avis */}
+                    <View style={styles.section}>
+                        <View style={styles.sectionHead}>
+                            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                                Avis {stats.total > 0 ? `(${stats.total})` : ""}
+                            </Text>
+                            <TouchableOpacity onPress={handleAddReview} style={styles.addReviewBtn} activeOpacity={0.85}>
+                                <Ionicons name="add" size={17} color={palette.white} />
+                                <Text style={styles.addReviewBtnText}>Avis</Text>
                             </TouchableOpacity>
                         </View>
 
                         {stats.total > 0 && <ReviewStats average={stats.average} total={stats.total} />}
 
                         {showReviewForm && (
-                            <View ref={reviewFormRef}>
-                                <ReviewForm
-                                    restaurantId={id!}
-                                    existingReview={userReview}
-                                    onSuccess={handleReviewSuccess}
-                                    onCancel={() => setShowReviewForm(false)}
-                                />
-                            </View>
+                            <ReviewForm
+                                restaurantId={id!}
+                                existingReview={userReview}
+                                onSuccess={handleReviewSuccess}
+                                onCancel={() => setShowReviewForm(false)}
+                            />
                         )}
 
                         {reviews.length === 0 && !showReviewForm && (
-                            <View style={styles.noReviewsContainer}>
-                                <Ionicons name="chatbubble-outline" size={40} color={palette.gray400} />
-                                <Text style={[styles.noReviews, { color: colors.textSecondary }]}>
-                                    Aucun avis pour le moment.{"\n"}Sois le premier a en laisser un !
-                                </Text>
+                            <View style={styles.noReviews}>
+                                <View style={styles.noReviewsIcon}>
+                                    <Ionicons name="chatbubble-ellipses-outline" size={32} color={palette.orange} />
+                                </View>
+                                <Text style={[styles.noReviewsTitle, { color: colors.text }]}>Aucun avis pour le moment</Text>
+                                <Text style={styles.noReviewsSub}>Sois le premier à partager ton expérience !</Text>
                             </View>
                         )}
 
@@ -544,17 +453,14 @@ export default function RestaurantDetailScreen() {
                                 style={styles.showMoreBtn}
                                 activeOpacity={0.7}
                             >
-                                <Text style={[styles.showMoreText, { color: palette.orange }]}>
-                                    {showAllReviews ? "Voir moins" : `Voir tous les avis (${reviews.length})`}
+                                <Text style={styles.showMoreText}>
+                                    {showAllReviews ? "Voir moins" : `Voir les ${reviews.length} avis`}
                                 </Text>
                                 <Ionicons name={showAllReviews ? "chevron-up" : "chevron-down"} size={16} color={palette.orange} />
                             </TouchableOpacity>
                         )}
                     </View>
-
-                    {/* Bottom safe space */}
-                    <View style={{ height: 40 }} />
-                </Animated.ScrollView>
+                </ScrollView>
             </KeyboardAvoidingView>
 
             <AuthModal
@@ -570,6 +476,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
+    scrollContent: {
+        paddingBottom: 40,
+    },
     loading: {
         flex: 1,
         justifyContent: "center",
@@ -584,249 +493,216 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
 
-    heroContainer: {
-        height: 320,
-        position: "relative",
+    // Image card
+    imageCard: {
+        height: 230,
+        marginHorizontal: 16,
+        marginTop: 12,
+        borderRadius: 24,
         overflow: "hidden",
+        position: "relative",
+        backgroundColor: palette.orangeSoft,
     },
     heroImage: {
         width: "100%",
         height: "100%",
     },
-    heroGradient: {
+    imageGradient: {
         position: "absolute",
-        bottom: 0,
         left: 0,
         right: 0,
-        height: 200,
+        bottom: 0,
+        height: "55%",
     },
-    heroTopBar: {
+    imageActions: {
         position: "absolute",
-        top: Platform.OS === "ios" ? 54 : 40,
-        left: 16,
-        right: 16,
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-    heroTopRight: {
+        top: 12,
+        right: 12,
         flexDirection: "row",
         gap: 10,
     },
-    heroBtn: {
+    imageBtn: {
         width: 40,
         height: 40,
         borderRadius: 20,
         backgroundColor: "rgba(0,0,0,0.35)",
         justifyContent: "center",
         alignItems: "center",
-        ...Platform.select({
-            ios: {
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.25,
-                shadowRadius: 4,
-            },
-            android: { elevation: 4 },
-        }),
     },
-    heroBottom: {
+    ratingPill: {
         position: "absolute",
-        bottom: 44,
-        left: 20,
-        right: 20,
+        bottom: 14,
+        left: 14,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        backgroundColor: "rgba(255,255,255,0.95)",
+        paddingHorizontal: 11,
+        paddingVertical: 6,
+        borderRadius: 20,
     },
-    heroName: {
-        fontSize: 28,
+    ratingPillScore: {
+        fontSize: 13.5,
         fontWeight: "800",
-        color: palette.white,
-        letterSpacing: -0.5,
-        marginBottom: 6,
+        color: "#1C1917",
     },
-    heroRating: {
+    ratingPillCount: {
+        fontSize: 12.5,
+        fontWeight: "500",
+        color: palette.gray500,
+    },
+
+    // Title
+    titleBlock: {
+        paddingHorizontal: 20,
+        paddingTop: 18,
+        gap: 7,
+    },
+    name: {
+        fontSize: 26,
+        fontWeight: "800",
+        letterSpacing: -0.6,
+        lineHeight: 31,
+    },
+    addressRow: {
         flexDirection: "row",
         alignItems: "center",
         gap: 5,
     },
-    heroRatingText: {
-        fontSize: 15,
-        fontWeight: "700",
-        color: palette.white,
-    },
-    heroRatingCount: {
-        fontSize: 13,
-        color: "rgba(255,255,255,0.75)",
-    },
-
-    floatingCard: {
-        marginHorizontal: 16,
-        marginTop: -14,
-        backgroundColor: palette.white,
-        borderRadius: 20,
-        padding: 18,
-        ...Platform.select({
-            ios: {
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.1,
-                shadowRadius: 16,
-            },
-            android: { elevation: 8 },
-        }),
-        marginBottom: 24,
-    },
-    infoGrid: {
-        gap: 14,
-        marginBottom: 16,
-    },
-    infoItem: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-    },
-    infoIconCircle: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    infoItemContent: {
+    addressText: {
+        fontSize: 14,
+        fontWeight: "500",
+        color: palette.gray500,
         flex: 1,
     },
-    infoLabel: {
-        fontSize: 11,
-        fontWeight: "600",
-        color: palette.gray500,
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
-        marginBottom: 2,
-    },
-    infoValue: {
-        fontSize: 14,
-        fontWeight: "600",
-    },
+
+    // Actions
     actionRow: {
         flexDirection: "row",
         gap: 10,
+        paddingHorizontal: 20,
+        marginTop: 18,
     },
-    actionBtnCall: {
+    actionBtnPrimary: {
         flex: 1,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
         gap: 8,
-        paddingVertical: 13,
-        borderRadius: 14,
+        paddingVertical: 14,
+        borderRadius: 16,
         backgroundColor: palette.orange,
     },
-    actionBtnCallText: {
+    actionBtnPrimaryText: {
         color: palette.white,
         fontSize: 15,
         fontWeight: "700",
     },
-    actionBtnDir: {
+    actionBtnSecondary: {
         flex: 1,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
         gap: 8,
-        paddingVertical: 13,
-        borderRadius: 14,
-        backgroundColor: palette.orangeSoft,
+        paddingVertical: 14,
+        borderRadius: 16,
+        backgroundColor: palette.white,
         borderWidth: 1.5,
-        borderColor: palette.orangeLight,
+        borderColor: palette.orangeSoft,
     },
-    actionBtnDirText: {
+    actionBtnSecondaryText: {
         color: palette.orange,
         fontSize: 15,
         fontWeight: "700",
     },
 
-    menuSection: {
-        marginBottom: 28,
-    },
-    menuSectionHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-        paddingHorizontal: 20,
-        marginBottom: 18,
-    },
-    menuTitleRow: {
+    // Info card
+    infoCard: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
+        gap: 13,
+        marginHorizontal: 20,
+        marginTop: 22,
+        padding: 16,
+        backgroundColor: palette.white,
+        borderRadius: 18,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 2,
     },
-    menuIconBg: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
+    infoIcon: {
+        width: 42,
+        height: 42,
+        borderRadius: 13,
+        backgroundColor: palette.orangeSoft,
         justifyContent: "center",
         alignItems: "center",
     },
-    menuSectionTitle: {
-        fontSize: 22,
-        fontWeight: "800",
-        letterSpacing: -0.3,
-    },
-    menuSubtitle: {
-        fontSize: 13,
-        color: palette.gray500,
-        marginTop: 3,
-        marginLeft: 46,
-    },
-    offreBadge: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        backgroundColor: palette.amberSoft,
-        borderRadius: 10,
-    },
-    offreBadgeText: {
-        color: "#92400E",
-        fontSize: 11,
+    infoLabel: {
+        fontSize: 11.5,
         fontWeight: "700",
+        color: palette.gray400,
+        textTransform: "uppercase",
+        letterSpacing: 0.5,
+        marginBottom: 3,
     },
+    infoValue: {
+        fontSize: 14.5,
+        fontWeight: "600",
+    },
+
+    // Sections
+    section: {
+        marginTop: 28,
+        paddingHorizontal: 20,
+    },
+    sectionHead: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 14,
+    },
+    sectionTitle: {
+        fontSize: 19,
+        fontWeight: "800",
+        letterSpacing: -0.4,
+    },
+    sectionCount: {
+        fontSize: 13,
+        fontWeight: "600",
+        color: palette.gray400,
+    },
+
+    // Menu carousel
     menuCarousel: {
-        paddingLeft: 20,
         paddingRight: 20,
-        paddingBottom: 6,
-    },
-    menuCardOuter: {
-        width: MENU_CARD_WIDTH,
-        marginRight: MENU_CARD_SPACING,
+        paddingBottom: 4,
     },
     menuCard: {
-        borderRadius: 20,
+        width: MENU_CARD_WIDTH,
+        marginRight: MENU_CARD_SPACING,
+        backgroundColor: palette.white,
+        borderRadius: 18,
         overflow: "hidden",
-        ...Platform.select({
-            ios: {
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.12,
-                shadowRadius: 14,
-            },
-            android: { elevation: 6 },
-        }),
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.07,
+        shadowRadius: 12,
+        elevation: 3,
     },
-    menuCardImageWrap: {
+    menuImageWrap: {
         width: "100%",
-        height: 160,
+        height: 130,
         position: "relative",
-        overflow: "hidden",
     },
-    menuCardImage: {
+    menuImage: {
         width: "100%",
         height: "100%",
     },
-    menuCardPlaceholder: {
+    menuPlaceholder: {
         backgroundColor: palette.orangeSoft,
-    },
-    menuPlaceholderInner: {
-        flex: 1,
         justifyContent: "center",
         alignItems: "center",
     },
@@ -835,141 +711,64 @@ const styles = StyleSheet.create({
         bottom: 10,
         right: 10,
         backgroundColor: palette.orange,
-        paddingHorizontal: 14,
-        paddingVertical: 6,
-        borderRadius: 12,
-        ...Platform.select({
-            ios: {
-                shadowColor: palette.orange,
-                shadowOffset: { width: 0, height: 3 },
-                shadowOpacity: 0.4,
-                shadowRadius: 6,
-            },
-            android: { elevation: 4 },
-        }),
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        borderRadius: 11,
     },
     menuPriceFloatText: {
         color: palette.white,
-        fontSize: 18,
+        fontSize: 15.5,
         fontWeight: "800",
     },
-    menuCardBody: {
-        padding: 16,
+    menuBody: {
+        padding: 13,
     },
-    menuTagRow: {
-        flexDirection: "row",
-        gap: 8,
-        marginBottom: 10,
-    },
-    menuTag: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-    },
-    menuTagText: {
-        fontSize: 11,
+    menuTitle: {
+        fontSize: 14.5,
         fontWeight: "700",
+        lineHeight: 19,
+        minHeight: 38,
     },
-    menuCardTitle: {
-        fontSize: 16,
-        fontWeight: "700",
-        lineHeight: 22,
-        marginBottom: 14,
-    },
-    menuCardFooter: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingTop: 12,
-        borderTopWidth: 1,
-        borderTopColor: palette.gray200,
-    },
-    menuCardPriceLabel: {
-        fontSize: 12,
-        fontWeight: "600",
-        color: palette.gray500,
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
-    },
-    menuCardPriceValue: {
-        fontSize: 20,
-        fontWeight: "800",
-    },
-
     dotRow: {
         flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
-        gap: 6,
-        marginTop: 16,
+        gap: 5,
+        marginTop: 14,
     },
     dot: {
-        height: 8,
+        height: 7,
         borderRadius: 4,
     },
-
-    studentCardInfo: {
+    cardHint: {
         flexDirection: "row",
         alignItems: "center",
         gap: 10,
-        marginHorizontal: 20,
-        marginTop: 18,
-        padding: 14,
+        marginTop: 16,
+        padding: 13,
         backgroundColor: palette.orangeSoft,
         borderRadius: 14,
-        borderWidth: 1,
-        borderColor: palette.orangeLight,
     },
-    studentCardInfoText: {
-        fontSize: 13,
+    cardHintText: {
+        fontSize: 12.5,
         flex: 1,
-        lineHeight: 18,
+        lineHeight: 17,
         fontWeight: "500",
+        color: "#9A3412",
     },
 
-    descSection: {
-        paddingHorizontal: 20,
-        marginBottom: 24,
-    },
-    descTitle: {
-        fontSize: 20,
-        fontWeight: "700",
-        marginBottom: 10,
-        letterSpacing: -0.2,
-    },
+    // Description
     descText: {
-        fontSize: 15,
-        lineHeight: 24,
+        fontSize: 14.5,
+        lineHeight: 23,
+        color: palette.gray500,
     },
 
-    divider: {
-        height: 1,
-        marginHorizontal: 20,
-        marginBottom: 24,
-    },
-
-    reviewsSection: {
-        paddingHorizontal: 20,
-        marginBottom: 8,
-    },
-    reviewsHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 16,
-    },
-    reviewsTitle: {
-        fontSize: 20,
-        fontWeight: "700",
-        letterSpacing: -0.2,
-    },
+    // Avis
     addReviewBtn: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 6,
+        gap: 5,
         paddingHorizontal: 14,
         paddingVertical: 8,
         borderRadius: 12,
@@ -977,18 +776,31 @@ const styles = StyleSheet.create({
     },
     addReviewBtnText: {
         color: palette.white,
-        fontSize: 13,
+        fontSize: 13.5,
         fontWeight: "700",
     },
-    noReviewsContainer: {
-        alignItems: "center",
-        paddingVertical: 32,
-        gap: 12,
-    },
     noReviews: {
-        fontSize: 14,
+        alignItems: "center",
+        paddingVertical: 28,
+        gap: 8,
+    },
+    noReviewsIcon: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: palette.orangeSoft,
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 4,
+    },
+    noReviewsTitle: {
+        fontSize: 15.5,
+        fontWeight: "700",
+    },
+    noReviewsSub: {
+        fontSize: 13.5,
+        color: palette.gray400,
         textAlign: "center",
-        lineHeight: 20,
     },
     showMoreBtn: {
         flexDirection: "row",
@@ -998,10 +810,11 @@ const styles = StyleSheet.create({
         paddingVertical: 14,
         borderRadius: 14,
         backgroundColor: palette.orangeSoft,
-        marginTop: 12,
+        marginTop: 6,
     },
     showMoreText: {
         fontSize: 14,
         fontWeight: "700",
+        color: palette.orange,
     },
 })
