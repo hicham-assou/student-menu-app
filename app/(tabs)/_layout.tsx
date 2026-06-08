@@ -27,10 +27,11 @@ export default function TabLayout() {
             screenOptions={{
                 tabBarActiveTintColor: colors.primary,
                 tabBarInactiveTintColor: colors.tabIconDefault,
-                tabBarStyle: {
-                    backgroundColor: colors.surface,
-                    borderTopColor: colors.border,
-                },
+                tabBarShowLabel: true,
+                tabBarStyle: styles.tabBar,
+                tabBarItemStyle: styles.tabItem,
+                tabBarLabelStyle: styles.tabLabel,
+                tabBarIconStyle: styles.tabIcon,
                 headerShown: false,
             }}
         >
@@ -38,28 +39,36 @@ export default function TabLayout() {
                 name="index"
                 options={{
                     title: "Accueil",
-                    tabBarIcon: ({color, size}) => <Ionicons name="home" size={size} color={color}/>,
+                    tabBarIcon: ({color, focused}) => (
+                        <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color}/>
+                    ),
                 }}
             />
             <Tabs.Screen
                 name="map"
                 options={{
                     title: "Carte",
-                    tabBarIcon: ({color, size}) => <Ionicons name="map" size={size} color={color}/>,
+                    tabBarIcon: ({color, focused}) => (
+                        <Ionicons name={focused ? "map" : "map-outline"} size={24} color={color}/>
+                    ),
                 }}
             />
             <Tabs.Screen
                 name="favorites"
                 options={{
                     title: "Favoris",
-                    tabBarIcon: ({color, size}) => <Ionicons name="heart" size={size} color={color}/>,
+                    tabBarIcon: ({color, focused}) => (
+                        <Ionicons name={focused ? "heart" : "heart-outline"} size={24} color={color}/>
+                    ),
                 }}
             />
             <Tabs.Screen
                 name="profile"
                 options={{
                     title: "Profil",
-                    tabBarIcon: ({color, size}) => <Ionicons name="person" size={size} color={color}/>,
+                    tabBarIcon: ({color, focused}) => (
+                        <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color}/>
+                    ),
                 }}
             />
         </Tabs>
@@ -72,5 +81,34 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         backgroundColor: Colors.light.background,
+    },
+    tabBar: {
+        position: "absolute",
+        bottom: 24,
+        left: 20,
+        right: 20,
+        height: 70,
+        borderRadius: 30,
+        backgroundColor: "#FFFFFF",
+        borderTopWidth: 0,
+        paddingHorizontal: 8,
+        paddingTop: 10,
+        paddingBottom: 12,
+        shadowColor: "#000",
+        shadowOffset: {width: 0, height: 6},
+        shadowOpacity: 0.12,
+        shadowRadius: 16,
+        elevation: 12,
+    },
+    tabItem: {
+        paddingVertical: 0,
+    },
+    tabIcon: {
+        marginTop: 2,
+    },
+    tabLabel: {
+        fontSize: 10.5,
+        fontWeight: "600",
+        marginTop: 1,
     },
 })

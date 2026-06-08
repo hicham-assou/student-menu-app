@@ -1,21 +1,19 @@
-import {FlatList, RefreshControl, ScrollView, StyleSheet, Text, View} from 'react-native'
-import {SafeAreaView} from 'react-native-safe-area-context'
-import {Ionicons} from '@expo/vector-icons'
-import {useCallback, useEffect, useState} from 'react'
-import {useRouter} from 'expo-router'
-import {useColorScheme} from "@/components/useColorScheme.web";
-import {Colors} from '@/constants/Colors'
-import {useAuth} from '@/contexts/AuthContext'
-import {getFavoriteRestaurants, toggleFavorite as toggleFav} from '@/lib/favorites'
-import {RestaurantCard} from '@/components/restaurant/RestaurantCard'
-import {Button} from '@/components/ui/Button'
-import type {Restaurant} from '@/types'
+import { FlatList, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
+import { useCallback, useEffect, useState } from 'react'
+import { useRouter } from 'expo-router'
+import { Colors } from '@/constants/Colors'
+import { useAuth } from '@/contexts/AuthContext'
+import { getFavoriteRestaurants, toggleFavorite as toggleFav } from '@/lib/favorites'
+import { RestaurantCard } from '@/components/restaurant/RestaurantCard'
+import { Button } from '@/components/ui/Button'
+import type { Restaurant } from '@/types'
 
 export default function FavoritesScreen() {
-    const colorScheme = useColorScheme() ?? 'light'
-    const colors = Colors[colorScheme]
+    const colors = Colors.light
     const router = useRouter()
-    const {user} = useAuth()
+    const { user } = useAuth()
 
     const [favorites, setFavorites] = useState<Restaurant[]>([])
     const [loading, setLoading] = useState(true)
@@ -42,98 +40,77 @@ export default function FavoritesScreen() {
         loadFavorites()
     }, [loadFavorites])
 
-    // <CHANGE> Fonction pour retirer un favori
     const handleToggleFavorite = async (restaurantId: string) => {
         if (!user) return
-
         try {
             await toggleFav(restaurantId)
-            // Recharger la liste des favoris
             await loadFavorites()
         } catch (error) {
             console.error('Error toggling favorite:', error)
         }
     }
 
-    // Si non connecté
+    const renderEmpty = (title: string, subtitle: string, cta: { label: string; onPress: () => void }) => (
+        <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            refreshControl={
+                <RefreshControl
+                    refreshing={loading}
+                    onRefresh={loadFavorites}
+                    tintColor={colors.primary}
+                    colors={[colors.primary]}
+                />
+            }
+        >
+            <View style={styles.emptyContainer}>
+                <View style={styles.emptyIconCircle}>
+                    <Ionicons name="heart-outline" size={40} color={colors.primary} />
+                </View>
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>{title}</Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
+                <Button title={cta.label} onPress={cta.onPress} style={styles.button} />
+            </View>
+        </ScrollView>
+    )
+
+    // Non connecté
     if (!user) {
         return (
-            <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
-                {/* <CHANGE> Ajouter ScrollView avec RefreshControl pour pouvoir refresh */}
-                <ScrollView
-                    contentContainerStyle={styles.scrollContent}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={loading}
-                            onRefresh={loadFavorites}
-                            tintColor={colors.primary}
-                            colors={[colors.primary]}
-                        />
-                    }
-                >
-                    <View style={styles.emptyContainer}>
-                        <Ionicons name="heart-outline" size={64} color={colors.textSecondary}/>
-                        <Text style={[styles.emptyTitle, {color: colors.text}]}>
-                            Pas de favoris
-                        </Text>
-                        <Text style={[styles.emptySubtitle, {color: colors.textSecondary}]}>
-                            Connecte-toi pour sauvegarder tes restaurants favoris
-                        </Text>
-                        <Button
-                            title="Se connecter"
-                            onPress={() => router.push('/auth/login')}
-                            style={styles.button}
-                        />
-                    </View>
-                </ScrollView>
+            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+                <View style={styles.header}>
+                    <Text style={[styles.headerTitle, { color: colors.text }]}>Mes Favoris</Text>
+                </View>
+                {renderEmpty(
+                    'Pas encore de favoris',
+                    'Connecte-toi pour sauvegarder tes restaurants préférés',
+                    { label: 'Se connecter', onPress: () => router.push('/auth/login') },
+                )}
             </SafeAreaView>
         )
     }
 
-    // Si connecté mais pas de favoris
+    // Connecté, aucun favori
     if (!loading && favorites.length === 0) {
         return (
-            <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
+            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
                 <View style={styles.header}>
-                    <Text style={[styles.headerTitle, {color: colors.text}]}>Mes Favoris</Text>
+                    <Text style={[styles.headerTitle, { color: colors.text }]}>Mes Favoris</Text>
                 </View>
-                {/* <CHANGE> Ajouter ScrollView avec RefreshControl pour pouvoir refresh */}
-                <ScrollView
-                    contentContainerStyle={styles.scrollContent}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={loading}
-                            onRefresh={loadFavorites}
-                            tintColor={colors.primary}
-                            colors={[colors.primary]}
-                        />
-                    }
-                >
-                    <View style={styles.emptyContainer}>
-                        <Ionicons name="heart-outline" size={64} color={colors.textSecondary}/>
-                        <Text style={[styles.emptyTitle, {color: colors.text}]}>
-                            Aucun favori
-                        </Text>
-                        <Text style={[styles.emptySubtitle, {color: colors.textSecondary}]}>
-                            Ajoute des restaurants en favoris pour les retrouver ici
-                        </Text>
-                        <Button
-                            title="Decouvrir des restaurants"
-                            onPress={() => router.push('/(tabs)/')}
-                            style={styles.button}
-                        />
-                    </View>
-                </ScrollView>
+                {renderEmpty(
+                    'Aucun favori',
+                    'Ajoute des restaurants en favoris pour les retrouver ici',
+                    { label: 'Découvrir des restaurants', onPress: () => router.push('/(tabs)/') },
+                )}
             </SafeAreaView>
         )
     }
 
     // Liste des favoris
     return (
-        <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
             <View style={styles.header}>
-                <Text style={[styles.headerTitle, {color: colors.text}]}>Mes Favoris</Text>
-                <Text style={[styles.headerSubtitle, {color: colors.textSecondary}]}>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>Mes Favoris</Text>
+                <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
                     {favorites.length} restaurant{favorites.length > 1 ? 's' : ''}
                 </Text>
             </View>
@@ -141,7 +118,7 @@ export default function FavoritesScreen() {
             <FlatList
                 data={favorites}
                 keyExtractor={(item) => item.id}
-                renderItem={({item}) => (
+                renderItem={({ item }) => (
                     <RestaurantCard
                         restaurant={item}
                         isFavorite={true}
@@ -169,22 +146,24 @@ const styles = StyleSheet.create({
     },
     header: {
         paddingHorizontal: 20,
-        paddingTop: 10,
-        paddingBottom: 16,
+        paddingTop: 8,
+        paddingBottom: 14,
     },
     headerTitle: {
-        fontSize: 28,
-        fontWeight: '700',
+        fontSize: 26,
+        fontWeight: '800',
+        letterSpacing: -0.5,
     },
     headerSubtitle: {
-        fontSize: 15,
-        marginTop: 4,
+        fontSize: 13.5,
+        fontWeight: '500',
+        marginTop: 2,
     },
     list: {
-        paddingHorizontal: 20,
-        paddingBottom: 20,
+        paddingHorizontal: 16,
+        paddingBottom: 110,
+        gap: 14,
     },
-    // <CHANGE> Ajouter scrollContent pour le ScrollView
     scrollContent: {
         flexGrow: 1,
     },
@@ -193,18 +172,29 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 40,
+        paddingBottom: 60,
         gap: 12,
+    },
+    emptyIconCircle: {
+        width: 84,
+        height: 84,
+        borderRadius: 42,
+        backgroundColor: '#FFF1E8',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 4,
     },
     emptyTitle: {
         fontSize: 20,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     emptySubtitle: {
-        fontSize: 15,
+        fontSize: 14.5,
         textAlign: 'center',
-        marginBottom: 20,
+        lineHeight: 21,
+        marginBottom: 16,
     },
     button: {
-        minWidth: 200,
+        minWidth: 220,
     },
 })

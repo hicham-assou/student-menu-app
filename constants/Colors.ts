@@ -2,13 +2,13 @@ const primaryColor = '#F97316'
 
 export const Colors = {
     light: {
-        text: '#0F172A',
-        textSecondary: '#64748B',
-        background: '#FFFFFF',
-        surface: '#F8FAFC',
+        text: '#1C1917',
+        textSecondary: '#78716C',
+        background: '#FAFAF9',
+        surface: '#FFFFFF',
         primary: primaryColor,
-        border: '#E2E8F0',
-        tabIconDefault: '#94A3B8',
+        border: '#ECE7E1',
+        tabIconDefault: '#A8A29E',
         tabIconSelected: primaryColor,
         error: '#de1c1c'
     },

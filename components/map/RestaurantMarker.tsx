@@ -1,7 +1,7 @@
-import { memo } from "react"
+import { memo, useEffect, useState } from "react"
 import { StyleSheet, View } from "react-native"
 import { Marker } from "react-native-maps"
-import Svg, { Circle, Path } from "react-native-svg"
+import Svg, { Circle } from "react-native-svg"
 import type { Restaurant } from "@/types"
 
 export type PriceTier = "low" | "mid" | "high" | "unknown"
@@ -21,11 +21,9 @@ const TIER_COLORS: Record<PriceTier, string> = {
     unknown: "#94A3B8",
 }
 
-// Dimensions du pin (viewBox SVG 24x32)
-const PIN_W = 32
-const PIN_H = 42
-const PIN_W_SEL = 40
-const PIN_H_SEL = 52
+// Boite FIXE (jamais redimensionnee) : le halo de selection est dessine
+// a l'interieur, donc aucun re-layout casse sur Android.
+const BOX = 36
 
 function RestaurantMarkerInner({
     restaurant,
@@ -34,8 +32,15 @@ function RestaurantMarkerInner({
     onPress,
 }: RestaurantMarkerProps) {
     const color = TIER_COLORS[tier]
-    const w = selected ? PIN_W_SEL : PIN_W
-    const h = selected ? PIN_H_SEL : PIN_H
+
+    // Re-capture le bitmap brievement a l'apparition / au changement d'etat,
+    // puis on coupe (perf + anti-flicker).
+    const [tracks, setTracks] = useState(true)
+    useEffect(() => {
+        setTracks(true)
+        const timer = setTimeout(() => setTracks(false), 600)
+        return () => clearTimeout(timer)
+    }, [selected, color])
 
     return (
         <Marker
@@ -47,26 +52,27 @@ function RestaurantMarkerInner({
                 e.stopPropagation?.()
                 onPress(restaurant)
             }}
-            // Anchor en bas-centre : la pointe du pin pointe sur les coords GPS
-            anchor={{ x: 0.5, y: 1 }}
-            tracksViewChanges={true}
+            // Point centre exactement sur les coords GPS
+            anchor={{ x: 0.5, y: 0.5 }}
+            tracksViewChanges={tracks}
         >
-            {/* Container EXACTEMENT a la taille du SVG pour que la pointe
-                touche les coords GPS (anchor 0.5/1 = bas-centre de la View) */}
-            <View
-                collapsable={false}
-                style={[styles.box, { width: w, height: h }]}
-            >
-                <Svg width={w} height={h} viewBox="0 0 24 32">
-                    {/* Forme du pin : goutte d'eau */}
-                    <Path
-                        d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20c0-6.6-5.4-12-12-12z"
-                        fill={color}
-                        stroke="#FFFFFF"
-                        strokeWidth={selected ? 2 : 1.5}
+            <View collapsable={false} style={styles.box}>
+                <Svg width={BOX} height={BOX} viewBox="0 0 36 36">
+                    {/* Halo de selection */}
+                    {selected && <Circle cx={18} cy={18} r={16} fill={color} fillOpacity={0.2} />}
+
+                    {/* Anneau blanc */}
+                    <Circle
+                        cx={18}
+                        cy={18}
+                        r={selected ? 10.5 : 9}
+                        fill="#FFFFFF"
+                        stroke={selected ? color : "rgba(0,0,0,0.15)"}
+                        strokeWidth={selected ? 2 : 1}
                     />
-                    {/* Cercle blanc interne */}
-                    <Circle cx={12} cy={12} r={4.5} fill="#FFFFFF" />
+
+                    {/* Point colore */}
+                    <Circle cx={18} cy={18} r={selected ? 7 : 6} fill={color} />
                 </Svg>
             </View>
         </Marker>
@@ -77,8 +83,10 @@ export const RestaurantMarker = memo(RestaurantMarkerInner)
 
 const styles = StyleSheet.create({
     box: {
+        width: BOX,
+        height: BOX,
         alignItems: "center",
-        justifyContent: "flex-end",
+        justifyContent: "center",
         backgroundColor: "transparent",
     },
 })

@@ -26,12 +26,10 @@ export default function HomeScreen() {
 
     const getMinMenuPrice = (restaurant: Restaurant) => {
         if (!restaurant.student_menu || restaurant.student_menu.length === 0) return 999999
-
         const prices = restaurant.student_menu.map((menu) => {
             const priceStr = menu.price.replace("€", "").replace(",", ".").trim()
             return Number.parseFloat(priceStr)
         })
-
         const minPrice = Math.min(...prices)
         return isNaN(minPrice) ? 999999 : minPrice
     }
@@ -39,11 +37,9 @@ export default function HomeScreen() {
     const filteredRestaurants = restaurants.filter((restaurant) => {
         if (!search.trim()) return true
         const searchLower = search.toLowerCase().trim()
-
         const nameMatch = restaurant.name.toLowerCase().includes(searchLower)
         const cityMatch = restaurant.city?.toLowerCase().includes(searchLower) || false
         const addressMatch = restaurant.address?.toLowerCase().includes(searchLower) || false
-
         return nameMatch || cityMatch || addressMatch
     })
 
@@ -56,14 +52,17 @@ export default function HomeScreen() {
         : filteredRestaurants
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <SafeAreaView style={styles.container}>
+            {/* Header */}
             <View style={styles.header}>
-                <View style={styles.titleContainer}>
-                    <Image source={require("@/assets/images/logo.png")} style={styles.logo} resizeMode="contain" />
-                    <Text style={[styles.title, { color: colors.text }]}>Stud'Table</Text>
+                <Image source={require("@/assets/images/logo.png")} style={styles.logo} resizeMode="contain" />
+                <View style={styles.headerText}>
+                    <Text style={styles.brandTitle}>Stud'Table</Text>
+                    <Text style={styles.subtitle}>Le menu étudiant près de toi</Text>
                 </View>
             </View>
 
+            {/* Search + Sort */}
             <View style={styles.searchRow}>
                 <View style={styles.searchContainer}>
                     <Ionicons name="search" size={17} color="#94A3B8" />
@@ -83,30 +82,16 @@ export default function HomeScreen() {
                 </View>
 
                 <TouchableOpacity
-                    style={[
-                        styles.sortButton,
-                        priceSort && { backgroundColor: colors.primary },
-                    ]}
+                    style={[styles.sortButton, priceSort && { backgroundColor: colors.primary }]}
                     onPress={togglePriceSort}
                     activeOpacity={0.8}
                     accessibilityLabel="Trier par prix"
                 >
-                    <Text
-                        style={[
-                            styles.sortButtonText,
-                            { color: priceSort ? "#FFFFFF" : colors.text },
-                        ]}
-                    >
+                    <Text style={[styles.sortButtonText, { color: priceSort ? "#FFFFFF" : colors.text }]}>
                         €
                     </Text>
                     <Ionicons
-                        name={
-                            priceSort === "asc"
-                                ? "arrow-up"
-                                : priceSort === "desc"
-                                    ? "arrow-down"
-                                    : "swap-vertical"
-                        }
+                        name={priceSort === "asc" ? "arrow-up" : priceSort === "desc" ? "arrow-down" : "swap-vertical"}
                         size={13}
                         color={priceSort ? "#FFFFFF" : "#64748B"}
                     />
@@ -166,25 +151,34 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: "#FAFAF9",
     },
     header: {
-        paddingHorizontal: 20,
-        paddingTop: 12,
-        paddingBottom: 12,
-    },
-    titleContainer: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
+        gap: 10,
+        paddingHorizontal: 20,
+        paddingTop: 4,
+        paddingBottom: 14,
     },
     logo: {
-        width: 60,
-        height: 60,
+        width: 38,
+        height: 38,
     },
-    title: {
-        fontSize: 28,
+    headerText: {
+        flex: 1,
+    },
+    brandTitle: {
+        fontSize: 22,
         fontWeight: "800",
+        color: "#1C1917",
         letterSpacing: -0.5,
+    },
+    subtitle: {
+        fontSize: 12.5,
+        fontWeight: "500",
+        color: "#78716C",
+        marginTop: 1,
     },
     searchRow: {
         flexDirection: "row",
@@ -195,13 +189,18 @@ const styles = StyleSheet.create({
     },
     searchContainer: {
         flex: 1,
-        height: 44,
+        height: 46,
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: 13,
-        borderRadius: 14,
+        paddingHorizontal: 14,
+        borderRadius: 16,
         gap: 8,
-        backgroundColor: "#F1F5F9",
+        backgroundColor: "#FFFFFF",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+        elevation: 2,
     },
     searchInput: {
         flex: 1,
@@ -210,15 +209,20 @@ const styles = StyleSheet.create({
         includeFontPadding: false,
     },
     sortButton: {
-        height: 44,
+        height: 46,
         minWidth: 56,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
         paddingHorizontal: 12,
-        borderRadius: 14,
+        borderRadius: 16,
         gap: 3,
-        backgroundColor: "#F1F5F9",
+        backgroundColor: "#FFFFFF",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+        elevation: 2,
     },
     sortButtonText: {
         fontSize: 15,
@@ -233,8 +237,9 @@ const styles = StyleSheet.create({
         fontWeight: "500",
     },
     list: {
-        paddingHorizontal: 20,
-        paddingBottom: 20,
+        paddingHorizontal: 16,
+        paddingBottom: 110,
+        gap: 14,
     },
     errorContainer: {
         backgroundColor: "#FEE2E2",
