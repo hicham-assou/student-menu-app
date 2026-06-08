@@ -22,7 +22,6 @@ export interface Restaurant {
     longitude: number
     phone?: string
     description?: string
-    opening_hours: string
     hours?: WeeklyHours | null
     categories?: string[]
     tags?: string[]

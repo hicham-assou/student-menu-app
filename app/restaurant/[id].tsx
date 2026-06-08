@@ -32,8 +32,8 @@ import { useNavigation } from "expo-router"
 import { CustomAlertManager } from "@/components/customAlert/CustomAlert"
 import type { Restaurant, Review } from "@/types"
 import { LinearGradient } from "expo-linear-gradient"
-import { getCategory, getTag } from "@/constants/discovery"
-import { getOpenStatus } from "@/lib/hours"
+import { getCategory, getTag, DAY_ORDER, DAY_SHORT } from "@/constants/discovery"
+import { getOpenStatus, hasAnyHours, formatPeriods } from "@/lib/hours"
 
 const { width } = Dimensions.get("window")
 const MENU_CARD_WIDTH = width * 0.66
@@ -377,7 +377,7 @@ export default function RestaurantDetailScreen() {
                     </View>
 
                     {/* Horaires */}
-                    {(restaurant.opening_hours || openStatus) && (
+                    {hasAnyHours(restaurant.hours) && (
                         <View style={styles.infoCard}>
                             <View style={styles.infoIcon}>
                                 <Ionicons name="time-outline" size={20} color={palette.orange} />
@@ -410,11 +410,21 @@ export default function RestaurantDetailScreen() {
                                         </View>
                                     )}
                                 </View>
-                                {restaurant.opening_hours ? (
-                                    <Text style={[styles.infoValue, { color: colors.text }]}>
-                                        {restaurant.opening_hours}
-                                    </Text>
-                                ) : null}
+                                <View style={styles.hoursList}>
+                                    {DAY_ORDER.map((d) => {
+                                        const isToday = new Date().getDay() === d
+                                        return (
+                                            <View key={d} style={styles.hoursDayRow}>
+                                                <Text style={[styles.hoursDay, isToday && styles.hoursToday]}>
+                                                    {DAY_SHORT[d]}
+                                                </Text>
+                                                <Text style={[styles.hoursVal, isToday && styles.hoursToday]}>
+                                                    {formatPeriods(restaurant.hours?.[d])}
+                                                </Text>
+                                            </View>
+                                        )
+                                    })}
+                                </View>
                             </View>
                         </View>
                     )}
@@ -725,6 +735,31 @@ const styles = StyleSheet.create({
     openPillText: {
         fontSize: 11.5,
         fontWeight: "700",
+    },
+    hoursList: {
+        marginTop: 4,
+        gap: 3,
+    },
+    hoursDayRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+    },
+    hoursDay: {
+        fontSize: 13.5,
+        color: palette.gray500,
+        fontWeight: "500",
+        width: 44,
+    },
+    hoursVal: {
+        fontSize: 13.5,
+        color: palette.gray500,
+        fontWeight: "500",
+        flex: 1,
+        textAlign: "right",
+    },
+    hoursToday: {
+        color: "#1C1917",
+        fontWeight: "800",
     },
     reportBtn: {
         flexDirection: "row",

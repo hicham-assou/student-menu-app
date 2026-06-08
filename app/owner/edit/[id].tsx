@@ -24,7 +24,6 @@ import { isRestaurantOwner } from "@/lib/restaurants"
 import { Button } from "@/components/ui/Button"
 import type { Restaurant, WeeklyHours } from "@/types"
 import { getCategory, getTag } from "@/constants/discovery"
-import { weeklyHoursToString } from "@/lib/hours"
 import { HoursEditor } from "@/components/owner/HoursEditor"
 import { CategoryRegimeModal } from "@/components/discovery/CategoryRegimeModal"
 import * as ImagePicker from "expo-image-picker"
@@ -50,7 +49,6 @@ export default function EditRestaurantScreen() {
     const [address, setAddress] = useState("")
     const [city, setCity] = useState("")
     const [phone, setPhone] = useState("")
-    const [openingHours, setOpeningHours] = useState("")
     const [description, setDescription] = useState("")
     const [isGeocodingAddress, setIsGeocodingAddress] = useState(false)
     const [studentMenuConditions, setStudentMenuConditions] = useState("")
@@ -150,7 +148,6 @@ export default function EditRestaurantScreen() {
                 setAddress(found.address || "")
                 setCity(found.city || "")
                 setPhone(found.phone || "")
-                setOpeningHours(found.opening_hours || "")
                 setDescription(found.description || "")
                 setImage(found.image || "")
                 setImageUrl(found.image_url || "")
@@ -296,14 +293,11 @@ export default function EditRestaurantScreen() {
                 image_url: menu.image_url || "",
             }))
 
-            const generatedHours = weeklyHoursToString(hours)
-
             const updates = {
                 name,
                 address,
                 city,
                 phone,
-                opening_hours: generatedHours || openingHours,
                 hours: Object.keys(hours).length > 0 ? hours : null,
                 categories,
                 tags,

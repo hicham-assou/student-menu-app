@@ -116,7 +116,7 @@ export function getOpenStatus(hours?: WeeklyHours | null, now: Date = new Date()
     return { isOpen: false, detail: "" }
 }
 
-/** Résumé lisible (lundi -> dimanche) pour le champ texte `opening_hours`. */
+/** Résumé lisible des horaires (lundi -> dimanche), utile pour un affichage compact. */
 export function weeklyHoursToString(hours?: WeeklyHours | null): string {
     if (!hasAnyHours(hours)) return ""
     const parts: string[] = []
