@@ -5,18 +5,18 @@
 
 -- 1) Nouvelles colonnes sur les restaurants ---------------------------
 alter table public.restaurants
-  add column if not exists category text,
-  add column if not exists tags     text[] default '{}',
-  add column if not exists hours    jsonb;
+  add column if not exists categories text[] default '{}',  -- plusieurs cuisines
+  add column if not exists tags       text[] default '{}',  -- regimes (halal, vege...)
+  add column if not exists hours      jsonb;                -- horaires structures
 
--- Index pour filtrer rapidement par categorie
-create index if not exists restaurants_category_idx on public.restaurants (category);
+-- Index GIN pour filtrer rapidement par categorie (tableau)
+create index if not exists restaurants_categories_idx on public.restaurants using gin (categories);
 
 -- 2) Table des suggestions / signalements -----------------------------
 create table if not exists public.suggestions (
   id              uuid primary key default gen_random_uuid(),
   type            text not null default 'new' check (type in ('new', 'correction')),
-  restaurant_id   uuid references public.restaurants(id) on delete set null,
+  restaurant_id   text references public.restaurants(id) on delete set null,
   restaurant_name text,
   address         text,
   city            text,

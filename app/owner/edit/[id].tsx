@@ -23,9 +23,10 @@ import { getRestaurants } from "@/lib/api"
 import { isRestaurantOwner } from "@/lib/restaurants"
 import { Button } from "@/components/ui/Button"
 import type { Restaurant, WeeklyHours } from "@/types"
-import { CATEGORIES, TAGS } from "@/constants/discovery"
+import { getCategory, getTag } from "@/constants/discovery"
 import { weeklyHoursToString } from "@/lib/hours"
 import { HoursEditor } from "@/components/owner/HoursEditor"
+import { CategoryRegimeModal } from "@/components/discovery/CategoryRegimeModal"
 import * as ImagePicker from "expo-image-picker"
 import { supabase } from "@/lib/supabase"
 import FormData from "form-data"
@@ -54,9 +55,10 @@ export default function EditRestaurantScreen() {
     const [isGeocodingAddress, setIsGeocodingAddress] = useState(false)
     const [studentMenuConditions, setStudentMenuConditions] = useState("")
     const [imageUrl, setImageUrl] = useState("")
-    const [category, setCategory] = useState<string>("")
+    const [categories, setCategories] = useState<string[]>([])
     const [tags, setTags] = useState<string[]>([])
     const [hours, setHours] = useState<WeeklyHours>({})
+    const [showCatModal, setShowCatModal] = useState(false)
 
     useEffect(() => {
         loadRestaurant()
@@ -160,7 +162,7 @@ export default function EditRestaurantScreen() {
                     })) || [],
                 )
                 setStudentMenuConditions(found.student_menu_conditions || "")
-                setCategory(found.category || "")
+                setCategories(found.categories || [])
                 setTags(found.tags || [])
                 setHours(found.hours || {})
             } else {
@@ -303,7 +305,7 @@ export default function EditRestaurantScreen() {
                 phone,
                 opening_hours: generatedHours || openingHours,
                 hours: Object.keys(hours).length > 0 ? hours : null,
-                category: category || null,
+                categories,
                 tags,
                 description,
                 student_menu: formattedMenus,
@@ -544,52 +546,25 @@ export default function EditRestaurantScreen() {
                     {/* Catégorie & régime */}
                     <View style={styles.section}>
                         <Text style={[styles.sectionTitle, { color: colors.text }]}>Catégorie & régime</Text>
-
-                        <Text style={[styles.label, { color: colors.text }]}>Type de cuisine</Text>
-                        <View style={styles.chipsWrap}>
-                            {CATEGORIES.map((c) => {
-                                const active = category === c.id
-                                return (
-                                    <TouchableOpacity
-                                        key={c.id}
-                                        onPress={() => setCategory(active ? "" : c.id)}
-                                        style={[
-                                            styles.pickChip,
-                                            { borderColor: colors.border },
-                                            active && { backgroundColor: colors.primary, borderColor: colors.primary },
-                                        ]}
-                                    >
-                                        <Text style={[styles.pickChipText, { color: active ? "#FFFFFF" : colors.text }]}>
-                                            {c.emoji} {c.label}
-                                        </Text>
-                                    </TouchableOpacity>
-                                )
-                            })}
-                        </View>
-
-                        <Text style={[styles.label, { color: colors.text, marginTop: 16 }]}>Régime</Text>
-                        <View style={styles.chipsWrap}>
-                            {TAGS.map((t) => {
-                                const active = tags.includes(t.id)
-                                return (
-                                    <TouchableOpacity
-                                        key={t.id}
-                                        onPress={() =>
-                                            setTags(active ? tags.filter((x) => x !== t.id) : [...tags, t.id])
-                                        }
-                                        style={[
-                                            styles.pickChip,
-                                            { borderColor: colors.border },
-                                            active && { backgroundColor: colors.primary, borderColor: colors.primary },
-                                        ]}
-                                    >
-                                        <Text style={[styles.pickChipText, { color: active ? "#FFFFFF" : colors.text }]}>
-                                            {t.label}
-                                        </Text>
-                                    </TouchableOpacity>
-                                )
-                            })}
-                        </View>
+                        <TouchableOpacity
+                            style={[styles.selectorBtn, { borderColor: colors.border, backgroundColor: colors.surface }]}
+                            onPress={() => setShowCatModal(true)}
+                            activeOpacity={0.7}
+                        >
+                            {categories.length === 0 && tags.length === 0 ? (
+                                <Text style={[styles.selectorPlaceholder, { color: colors.textSecondary }]}>
+                                    Choisir les catégories et régimes
+                                </Text>
+                            ) : (
+                                <Text style={[styles.selectorValue, { color: colors.text }]} numberOfLines={2}>
+                                    {[
+                                        ...categories.map((id) => getCategory(id)?.label).filter(Boolean),
+                                        ...tags.map((id) => getTag(id)?.label).filter(Boolean),
+                                    ].join(", ")}
+                                </Text>
+                            )}
+                            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                        </TouchableOpacity>
                     </View>
 
                     {/* Conditions pour les menus étudiants */}
@@ -717,6 +692,17 @@ export default function EditRestaurantScreen() {
                     />
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            <CategoryRegimeModal
+                visible={showCatModal}
+                initialCategories={categories}
+                initialTags={tags}
+                onClose={() => setShowCatModal(false)}
+                onApply={(c, t) => {
+                    setCategories(c)
+                    setTags(t)
+                }}
+            />
         </SafeAreaView>
     )
 }
@@ -922,19 +908,22 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         overflow: "hidden",
     },
-    chipsWrap: {
+    selectorBtn: {
         flexDirection: "row",
-        flexWrap: "wrap",
-        gap: 8,
+        alignItems: "center",
+        gap: 10,
+        borderWidth: 1,
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
     },
-    pickChip: {
-        paddingHorizontal: 13,
-        paddingVertical: 9,
-        borderRadius: 20,
-        borderWidth: 1.5,
+    selectorPlaceholder: {
+        flex: 1,
+        fontSize: 15,
     },
-    pickChipText: {
-        fontSize: 13.5,
+    selectorValue: {
+        flex: 1,
+        fontSize: 15,
         fontWeight: "600",
     },
 })

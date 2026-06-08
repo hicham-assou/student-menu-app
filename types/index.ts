@@ -24,7 +24,7 @@ export interface Restaurant {
     description?: string
     opening_hours: string
     hours?: WeeklyHours | null
-    category?: string
+    categories?: string[]
     tags?: string[]
     image?: string
     student_menu: MenuItem[]

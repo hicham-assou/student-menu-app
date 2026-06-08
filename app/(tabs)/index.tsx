@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 import {
+    ActivityIndicator,
     FlatList,
     Image,
     RefreshControl,
@@ -18,7 +19,7 @@ import { useRestaurants } from "@/hooks/useRestaurant"
 import { useUserLocation } from "@/hooks/useUserLocation"
 import { RestaurantCard } from "@/components/restaurant/RestaurantCard"
 import { CustomAlertManager } from "@/components/customAlert/CustomAlert"
-import { CATEGORIES } from "@/constants/discovery"
+import { CategoryRegimeModal } from "@/components/discovery/CategoryRegimeModal"
 import { isOpenNow } from "@/lib/hours"
 import { calculateDistance } from "@/lib/utils"
 import type { Restaurant } from "@/types"
@@ -39,7 +40,10 @@ export default function HomeScreen() {
     const [priceSort, setPriceSort] = useState<"asc" | "desc" | null>(null)
     const [distanceSort, setDistanceSort] = useState(false)
     const [openNow, setOpenNow] = useState(false)
-    const [category, setCategory] = useState<string | null>(null)
+    const [filterCategories, setFilterCategories] = useState<string[]>([])
+    const [filterTags, setFilterTags] = useState<string[]>([])
+    const [showFilters, setShowFilters] = useState(false)
+    const [locating, setLocating] = useState(false)
 
     const { restaurants, loading, error, refresh, toggleFavorite, isFavorite } = useRestaurants()
     const { location, requestLocation } = useUserLocation({ autoRequest: false })
@@ -55,7 +59,11 @@ export default function HomeScreen() {
             return
         }
         let loc = location
-        if (!loc) loc = await requestLocation()
+        if (!loc) {
+            setLocating(true)
+            loc = await requestLocation()
+            setLocating(false)
+        }
         if (loc) {
             setDistanceSort(true)
             setPriceSort(null)
@@ -88,11 +96,16 @@ export default function HomeScreen() {
                 const haystack = `${r.name} ${r.city ?? ""} ${r.address ?? ""}`.toLowerCase()
                 if (!haystack.includes(q)) return false
             }
-            if (category && r.category !== category) return false
+            if (
+                filterCategories.length > 0 &&
+                !(r.categories || []).some((c) => filterCategories.includes(c))
+            )
+                return false
+            if (filterTags.length > 0 && !filterTags.every((t) => (r.tags || []).includes(t))) return false
             if (openNow && !open) return false
             return true
         })
-    }, [enriched, search, category, openNow])
+    }, [enriched, search, filterCategories, filterTags, openNow])
 
     // Tri
     const sorted = useMemo(() => {
@@ -107,7 +120,8 @@ export default function HomeScreen() {
         return arr
     }, [filtered, distanceSort, priceSort, location])
 
-    const hasActiveFilter = !!search || !!category || openNow || distanceSort
+    const activeFilterCount = filterCategories.length + filterTags.length
+    const hasActiveFilter = !!search || activeFilterCount > 0 || openNow || distanceSort
 
     return (
         <SafeAreaView style={styles.container}>
@@ -154,7 +168,7 @@ export default function HomeScreen() {
                 </TouchableOpacity>
             </View>
 
-            {/* Filter chips */}
+            {/* Barre de filtres */}
             <View style={styles.filterWrap}>
                 <ScrollView
                     horizontal
@@ -165,25 +179,24 @@ export default function HomeScreen() {
                         active={distanceSort}
                         onPress={toggleDistanceSort}
                         icon="navigate"
-                        label="Près de moi"
+                        label={locating ? "Localisation…" : "Près de moi"}
+                        loading={locating}
                     />
                     <Chip active={openNow} onPress={() => setOpenNow((v) => !v)} icon="time" label="Ouvert" />
-                    <View style={styles.divider} />
-                    {CATEGORIES.map((c) => {
-                        const active = category === c.id
-                        return (
-                            <TouchableOpacity
-                                key={c.id}
-                                onPress={() => setCategory(active ? null : c.id)}
-                                activeOpacity={0.8}
-                                style={[styles.chip, active && styles.chipActive]}
-                            >
-                                <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                                    {c.emoji} {c.label}
-                                </Text>
-                            </TouchableOpacity>
-                        )
-                    })}
+                    <TouchableOpacity
+                        onPress={() => setShowFilters(true)}
+                        activeOpacity={0.8}
+                        style={[styles.chip, styles.chipIcon, activeFilterCount > 0 && styles.chipActive]}
+                    >
+                        <Ionicons
+                            name="options-outline"
+                            size={15}
+                            color={activeFilterCount > 0 ? "#FFFFFF" : "#F97316"}
+                        />
+                        <Text style={[styles.chipText, activeFilterCount > 0 && styles.chipTextActive]}>
+                            {activeFilterCount > 0 ? `Filtres (${activeFilterCount})` : "Filtres"}
+                        </Text>
+                    </TouchableOpacity>
                 </ScrollView>
             </View>
 
@@ -253,6 +266,17 @@ export default function HomeScreen() {
                     ) : null
                 }
             />
+
+            <CategoryRegimeModal
+                visible={showFilters}
+                initialCategories={filterCategories}
+                initialTags={filterTags}
+                onClose={() => setShowFilters(false)}
+                onApply={(c, t) => {
+                    setFilterCategories(c)
+                    setFilterTags(t)
+                }}
+            />
         </SafeAreaView>
     )
 }
@@ -262,19 +286,26 @@ function Chip({
     onPress,
     icon,
     label,
+    loading,
 }: {
     active: boolean
     onPress: () => void
     icon: keyof typeof Ionicons.glyphMap
     label: string
+    loading?: boolean
 }) {
     return (
         <TouchableOpacity
             onPress={onPress}
+            disabled={loading}
             activeOpacity={0.8}
             style={[styles.chip, styles.chipIcon, active && styles.chipActive]}
         >
-            <Ionicons name={icon} size={14} color={active ? "#FFFFFF" : "#F97316"} />
+            {loading ? (
+                <ActivityIndicator size="small" color="#F97316" />
+            ) : (
+                <Ionicons name={icon} size={14} color={active ? "#FFFFFF" : "#F97316"} />
+            )}
             <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
         </TouchableOpacity>
     )

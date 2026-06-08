@@ -1,95 +1,262 @@
 import { useState } from "react"
-import { StyleSheet, Text, TextInput, View } from "react-native"
+import { FlatList, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
 import { Colors } from "@/constants/Colors"
 import { DAY_ORDER, DAY_SHORT } from "@/constants/discovery"
-import { parseDayHours } from "@/lib/hours"
-import type { HoursPeriod, WeeklyHours } from "@/types"
+import type { WeeklyHours } from "@/types"
 
 const colors = Colors.light
+const ITEM_H = 48
 
-function seed(periods?: HoursPeriod[]): string {
-    if (!periods || periods.length === 0) return ""
-    return periods.map((p) => `${p.open}-${p.close}`).join(", ")
-}
+// Toutes les heures par tranche de 15 min ("00:00" → "23:45")
+const TIMES: string[] = (() => {
+    const arr: string[] = []
+    for (let h = 0; h < 24; h++) {
+        for (const m of [0, 15, 30, 45]) {
+            arr.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`)
+        }
+    }
+    return arr
+})()
 
 interface Props {
     initial?: WeeklyHours | null
     onChange: (hours: WeeklyHours) => void
 }
 
+interface PickerTarget {
+    day: number
+    index: number
+    field: "open" | "close"
+}
+
 /**
- * Saisie des horaires jour par jour, sous forme de texte
- * "11:30-14:30, 18:00-22:00" (laisser vide = fermé).
- * Émet des horaires structurés via onChange.
+ * Éditeur d'horaires : on choisit les heures dans une liste (pas de saisie
+ * texte), donc aucune erreur de format possible. Plusieurs créneaux par jour.
  */
 export function HoursEditor({ initial, onChange }: Props) {
-    const [rows, setRows] = useState<Record<number, string>>(() => {
-        const r: Record<number, string> = {}
-        for (const d of DAY_ORDER) r[d] = seed(initial?.[d])
-        return r
-    })
-
-    const update = (day: number, text: string) => {
-        const next = { ...rows, [day]: text }
-        setRows(next)
-        const hours: WeeklyHours = {}
+    const [hours, setHours] = useState<WeeklyHours>(() => {
+        const h: WeeklyHours = {}
         for (const d of DAY_ORDER) {
-            const periods = parseDayHours(next[d])
-            if (periods.length > 0) hours[d] = periods
+            if (initial?.[d]?.length) h[d] = initial[d].map((p) => ({ ...p }))
         }
-        onChange(hours)
+        return h
+    })
+    const [picker, setPicker] = useState<PickerTarget | null>(null)
+
+    const commit = (next: WeeklyHours) => {
+        setHours(next)
+        onChange(next)
     }
+
+    const addPeriod = (day: number) => {
+        commit({ ...hours, [day]: [...(hours[day] || []), { open: "12:00", close: "14:00" }] })
+    }
+
+    const removePeriod = (day: number, index: number) => {
+        const periods = (hours[day] || []).filter((_, i) => i !== index)
+        const next = { ...hours }
+        if (periods.length) next[day] = periods
+        else delete next[day]
+        commit(next)
+    }
+
+    const setTime = (day: number, index: number, field: "open" | "close", value: string) => {
+        const periods = (hours[day] || []).map((p, i) => (i === index ? { ...p, [field]: value } : p))
+        commit({ ...hours, [day]: periods })
+    }
+
+    const currentValue =
+        picker != null ? hours[picker.day]?.[picker.index]?.[picker.field] ?? "12:00" : "12:00"
+    const currentIndex = Math.max(0, TIMES.indexOf(currentValue))
 
     return (
         <View>
-            <Text style={styles.hint}>
-                Format : 11:30-14:30, 18:00-22:00 — laisse vide si fermé ce jour-là.
-            </Text>
-            {DAY_ORDER.map((d) => (
-                <View key={d} style={styles.row}>
-                    <Text style={styles.day}>{DAY_SHORT[d]}</Text>
-                    <TextInput
-                        style={styles.input}
-                        value={rows[d]}
-                        onChangeText={(t) => update(d, t)}
-                        placeholder="Fermé"
-                        placeholderTextColor="#A8A29E"
-                        autoCapitalize="none"
+            {DAY_ORDER.map((day) => {
+                const periods = hours[day] || []
+                return (
+                    <View key={day} style={styles.dayBlock}>
+                        <View style={styles.dayHeader}>
+                            <Text style={styles.dayLabel}>{DAY_SHORT[day]}</Text>
+                            {periods.length === 0 && <Text style={styles.closed}>Fermé</Text>}
+                        </View>
+
+                        {periods.map((p, i) => (
+                            <View key={i} style={styles.periodRow}>
+                                <TouchableOpacity
+                                    style={styles.timeBtn}
+                                    onPress={() => setPicker({ day, index: i, field: "open" })}
+                                >
+                                    <Ionicons name="time-outline" size={14} color={colors.primary} />
+                                    <Text style={styles.timeText}>{p.open}</Text>
+                                </TouchableOpacity>
+                                <Text style={styles.dash}>–</Text>
+                                <TouchableOpacity
+                                    style={styles.timeBtn}
+                                    onPress={() => setPicker({ day, index: i, field: "close" })}
+                                >
+                                    <Ionicons name="time-outline" size={14} color={colors.primary} />
+                                    <Text style={styles.timeText}>{p.close}</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => removePeriod(day, i)}
+                                    style={styles.removeBtn}
+                                    hitSlop={8}
+                                >
+                                    <Ionicons name="close-circle" size={20} color="#EF4444" />
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+
+                        <TouchableOpacity style={styles.addBtn} onPress={() => addPeriod(day)} activeOpacity={0.7}>
+                            <Ionicons name="add" size={16} color={colors.primary} />
+                            <Text style={styles.addText}>
+                                {periods.length ? "Ajouter un créneau" : "Ajouter des horaires"}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                )
+            })}
+
+            {/* Sélecteur d'heure */}
+            <Modal visible={picker != null} transparent animationType="fade" onRequestClose={() => setPicker(null)}>
+                <Pressable style={styles.backdrop} onPress={() => setPicker(null)} />
+                <View style={styles.pickerSheet}>
+                    <Text style={styles.pickerTitle}>
+                        {picker?.field === "open" ? "Heure d'ouverture" : "Heure de fermeture"}
+                    </Text>
+                    <FlatList
+                        data={TIMES}
+                        keyExtractor={(t) => t}
+                        getItemLayout={(_, i) => ({ length: ITEM_H, offset: ITEM_H * i, index: i })}
+                        initialScrollIndex={currentIndex}
+                        showsVerticalScrollIndicator={false}
+                        renderItem={({ item }) => {
+                            const selected = item === currentValue
+                            return (
+                                <TouchableOpacity
+                                    style={[styles.timeOption, selected && styles.timeOptionActive]}
+                                    onPress={() => {
+                                        if (picker) setTime(picker.day, picker.index, picker.field, item)
+                                        setPicker(null)
+                                    }}
+                                >
+                                    <Text style={[styles.timeOptionText, selected && styles.timeOptionTextActive]}>
+                                        {item}
+                                    </Text>
+                                    {selected && <Ionicons name="checkmark" size={18} color={colors.primary} />}
+                                </TouchableOpacity>
+                            )
+                        }}
                     />
                 </View>
-            ))}
+            </Modal>
         </View>
     )
 }
 
 const styles = StyleSheet.create({
-    hint: {
-        fontSize: 12.5,
-        color: colors.textSecondary,
-        marginBottom: 12,
-        fontStyle: "italic",
+    dayBlock: {
+        marginBottom: 14,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: "#F2EEE9",
     },
-    row: {
+    dayHeader: {
         flexDirection: "row",
         alignItems: "center",
         gap: 10,
         marginBottom: 8,
     },
-    day: {
-        width: 38,
-        fontSize: 14,
-        fontWeight: "700",
+    dayLabel: {
+        fontSize: 14.5,
+        fontWeight: "800",
         color: colors.text,
     },
-    input: {
-        flex: 1,
-        backgroundColor: colors.surface,
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: 10,
+    closed: {
+        fontSize: 13,
+        color: "#A8A29E",
+        fontStyle: "italic",
+    },
+    periodRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 8,
+    },
+    timeBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 5,
+        backgroundColor: "#FFF1E8",
         paddingHorizontal: 14,
-        paddingVertical: 10,
-        fontSize: 14.5,
+        paddingVertical: 9,
+        borderRadius: 12,
+    },
+    timeText: {
+        fontSize: 15,
+        fontWeight: "700",
+        color: "#9A3412",
+    },
+    dash: {
+        fontSize: 15,
+        color: colors.textSecondary,
+        fontWeight: "700",
+    },
+    removeBtn: {
+        marginLeft: "auto",
+    },
+    addBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 5,
+        alignSelf: "flex-start",
+        paddingVertical: 4,
+    },
+    addText: {
+        fontSize: 13.5,
+        fontWeight: "700",
+        color: colors.primary,
+    },
+    backdrop: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "rgba(0,0,0,0.4)",
+    },
+    pickerSheet: {
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: "55%",
+        backgroundColor: "#FFFFFF",
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        paddingTop: 16,
+    },
+    pickerTitle: {
+        fontSize: 17,
+        fontWeight: "800",
         color: colors.text,
+        textAlign: "center",
+        marginBottom: 8,
+    },
+    timeOption: {
+        height: ITEM_H,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+    },
+    timeOptionActive: {
+        backgroundColor: "#FFF1E8",
+    },
+    timeOptionText: {
+        fontSize: 16,
+        color: colors.text,
+        fontWeight: "600",
+    },
+    timeOptionTextActive: {
+        color: colors.primary,
+        fontWeight: "800",
     },
 })

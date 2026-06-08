@@ -255,7 +255,7 @@ export default function RestaurantDetailScreen() {
 
     const displayedReviews = showAllReviews ? reviews : reviews.slice(0, 3)
 
-    const category = getCategory(restaurant.category)
+    const categories = (restaurant.categories || []).map(getCategory)
     const tags = (restaurant.tags || []).map(getTag)
     const openStatus = getOpenStatus(restaurant.hours)
 
@@ -330,15 +330,18 @@ export default function RestaurantDetailScreen() {
                             </Text>
                         </View>
 
-                        {/* Catégorie + tags */}
-                        {(category || tags.length > 0) && (
+                        {/* Catégories + tags */}
+                        {(categories.length > 0 || tags.length > 0) && (
                             <View style={styles.tagsRow}>
-                                {category && (
-                                    <View style={styles.catChip}>
-                                        <Text style={styles.catChipText}>
-                                            {category.emoji} {category.label}
-                                        </Text>
-                                    </View>
+                                {categories.map(
+                                    (c) =>
+                                        c && (
+                                            <View key={c.id} style={styles.catChip}>
+                                                <Text style={styles.catChipText}>
+                                                    {c.emoji} {c.label}
+                                                </Text>
+                                            </View>
+                                        ),
                                 )}
                                 {tags.map(
                                     (t) =>
