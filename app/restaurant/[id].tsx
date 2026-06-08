@@ -39,6 +39,9 @@ const { width } = Dimensions.get("window")
 const MENU_CARD_WIDTH = width * 0.66
 const MENU_CARD_SPACING = 12
 
+// Base des liens de partage (pages hebergees via GitHub Pages, dossier /docs)
+const SHARE_BASE_URL = "https://hicham-assou.github.io/student-menu-app"
+
 const palette = {
     orange: "#F97316",
     orangeSoft: "#FFF1E8",
@@ -209,12 +212,16 @@ export default function RestaurantDetailScreen() {
     const handleShare = async () => {
         if (!restaurant) return
         try {
+            const link = `${SHARE_BASE_URL}/r.html?id=${restaurant.id}&name=${encodeURIComponent(restaurant.name)}`
             const priceLine =
                 sortedMenus.length > 0 ? `\nMenu étudiant dès ${sortedMenus[0].price}` : ""
             await Share.share({
+                title: restaurant.name,
                 message:
-                    `${restaurant.name} — sur Stud'Table 🍽️${priceLine}\n` +
-                    `📍 ${restaurant.address}, ${restaurant.city}`,
+                    `${restaurant.name} sur Stud'Table 🍽️${priceLine}\n` +
+                    `📍 ${restaurant.address}, ${restaurant.city}\n\n` +
+                    `👉 ${link}`,
+                url: link,
             })
         } catch (error) {
             console.error("Error sharing:", error)
