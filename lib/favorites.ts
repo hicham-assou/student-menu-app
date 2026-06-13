@@ -1,4 +1,5 @@
 import {supabase} from './supabase'
+import type {Restaurant} from '@/types'
 
 // Ajouter un favori
 export async function addFavorite(restaurantId: string): Promise<boolean> {
@@ -123,10 +124,10 @@ export async function getFavoriteRestaurants() {
 
         if (error) throw error
 
-        return data?.map(fav => ({
+        return (data?.map(fav => ({
             ...fav.restaurants,
             favorited_at: fav.created_at,
-        })) || []
+        })) || []) as unknown as Restaurant[]
     } catch (error) {
         console.error('Error fetching favorite restaurants:', error)
         return []

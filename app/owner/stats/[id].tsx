@@ -217,7 +217,7 @@ export default function RestaurantStatsScreen() {
 
     const engagementExplanation = `Sur 100 étudiants qui voient ton restaurant, ${engagementRate} effectuent une action (itinéraire, appel ou ajout en favori)`
 
-    const { labels, data, fullDates, chartWidth } = aggregateChartData(stats.dailyStats, selectedPeriod)
+    const { labels, data, fullDates, chartWidth } = aggregateChartData(stats.dailyStats ?? [], selectedPeriod)
 
     const chartData = {
         labels,
@@ -766,6 +766,17 @@ const styles = StyleSheet.create({
     tooltipText: {
         fontSize: 12,
         lineHeight: 16,
+    },
+    tooltipLabel: {
+        fontSize: 12,
+        fontWeight: "600",
+        color: "#FFFFFF",
+        marginBottom: 2,
+    },
+    tooltipValue: {
+        fontSize: 14,
+        fontWeight: "800",
+        color: "#FFFFFF",
     },
     valueCard: {
         marginHorizontal: 20,

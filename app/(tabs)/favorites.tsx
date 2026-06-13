@@ -7,6 +7,7 @@ import { Colors } from '@/constants/Colors'
 import { useAuth } from '@/contexts/AuthContext'
 import { getFavoriteRestaurants, toggleFavorite as toggleFav } from '@/lib/favorites'
 import { RestaurantCard } from '@/components/restaurant/RestaurantCard'
+import { RestaurantCardSkeleton } from '@/components/restaurant/RestaurantCardSkeleton'
 import { Button } from '@/components/ui/Button'
 import type { Restaurant } from '@/types'
 
@@ -135,6 +136,15 @@ export default function FavoritesScreen() {
                         colors={[colors.primary]}
                     />
                 }
+                ListEmptyComponent={
+                    loading ? (
+                        <View style={styles.skeletonWrap}>
+                            {[0, 1, 2].map((i) => (
+                                <RestaurantCardSkeleton key={i} />
+                            ))}
+                        </View>
+                    ) : null
+                }
             />
         </SafeAreaView>
     )
@@ -162,6 +172,9 @@ const styles = StyleSheet.create({
     list: {
         paddingHorizontal: 16,
         paddingBottom: 110,
+        gap: 14,
+    },
+    skeletonWrap: {
         gap: 14,
     },
     scrollContent: {

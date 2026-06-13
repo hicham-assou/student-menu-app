@@ -1,7 +1,7 @@
 // Types pour les restaurants
 export interface MenuItem {
     title: string
-    price: string,
+    price: number
     image_url?: string
 }
 

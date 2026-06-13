@@ -24,6 +24,8 @@ import { isRestaurantOwner } from "@/lib/restaurants"
 import { Button } from "@/components/ui/Button"
 import type { Restaurant, WeeklyHours } from "@/types"
 import { getCategory, getTag } from "@/constants/discovery"
+import { priceToNumber } from "@/lib/price"
+import { useRestaurantStore } from "@/stores/restaurants"
 import { HoursEditor } from "@/components/owner/HoursEditor"
 import { CategoryRegimeModal } from "@/components/discovery/CategoryRegimeModal"
 import * as ImagePicker from "expo-image-picker"
@@ -52,7 +54,6 @@ export default function EditRestaurantScreen() {
     const [description, setDescription] = useState("")
     const [isGeocodingAddress, setIsGeocodingAddress] = useState(false)
     const [studentMenuConditions, setStudentMenuConditions] = useState("")
-    const [imageUrl, setImageUrl] = useState("")
     const [categories, setCategories] = useState<string[]>([])
     const [tags, setTags] = useState<string[]>([])
     const [hours, setHours] = useState<WeeklyHours>({})
@@ -150,11 +151,10 @@ export default function EditRestaurantScreen() {
                 setPhone(found.phone || "")
                 setDescription(found.description || "")
                 setImage(found.image || "")
-                setImageUrl(found.image_url || "")
                 setStudentMenus(
                     found.student_menu?.map((menu) => ({
                         title: menu.title,
-                        price: menu.price.replace("€", "").trim(), // Remove € for editing
+                        price: priceToNumber(menu.price)?.toString() ?? "", // nombre -> texte pour l'edition
                         image_url: menu.image_url || "",
                     })) || [],
                 )
@@ -289,7 +289,7 @@ export default function EditRestaurantScreen() {
 
             const formattedMenus = validMenus.map((menu) => ({
                 title: menu.title,
-                price: menu.price.trim() ? `${menu.price.trim()}€` : "", // Add € when saving
+                price: priceToNumber(menu.price) ?? 0, // stocke un nombre
                 image_url: menu.image_url || "",
             }))
 
@@ -313,6 +313,8 @@ export default function EditRestaurantScreen() {
             if (error) throw error
 
             if (data && data.length > 0) {
+                // Invalide le cache pour que les changements apparaissent partout
+                useRestaurantStore.getState().fetch(true)
                 CustomAlertManager.alert("Succès", "Restaurant mis à jour avec succès", "success", [
                     { text: "OK", onPress: () => router.back() },
                 ])
@@ -811,15 +813,6 @@ const styles = StyleSheet.create({
         width: "100%",
         height: "100%",
         resizeMode: "cover",
-    },
-    imagePlaceholder: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    imagePlaceholderText: {
-        marginTop: 12,
-        fontSize: 16,
     },
     uploadingOverlay: {
         ...StyleSheet.absoluteFillObject,

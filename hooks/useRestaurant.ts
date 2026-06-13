@@ -1,39 +1,24 @@
-import {useCallback, useEffect, useState} from 'react'
-import {getRestaurants, searchRestaurants} from '@/lib/api'
-import {getFavorites, toggleFavorite as toggleFav} from '@/lib/favorites'
-import {useAuth} from '@/contexts/AuthContext'
-import type {Restaurant} from '@/types'
+import { useCallback, useEffect, useState } from 'react'
+import { getFavorites, toggleFavorite as toggleFav } from '@/lib/favorites'
+import { useAuth } from '@/contexts/AuthContext'
+import { useRestaurantStore } from '@/stores/restaurants'
 
 export function useRestaurants() {
-    const [restaurants, setRestaurants] = useState<Restaurant[]>([])
-    const [favorites, setFavorites] = useState<string[]>([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
-    const [searchQuery, setSearchQuery] = useState('')
-    const {user} = useAuth()
+    // Liste des restos : vient du cache partagé (zustand)
+    const restaurants = useRestaurantStore((s) => s.restaurants)
+    const loading = useRestaurantStore((s) => s.loading)
+    const error = useRestaurantStore((s) => s.error)
+    const fetchRestaurants = useRestaurantStore((s) => s.fetch)
 
-    const loadRestaurants = useCallback(async () => {
-        try {
-            setLoading(true)
-            setError(null)
-            const data = searchQuery
-                ? await searchRestaurants(searchQuery)
-                : await getRestaurants()
-            setRestaurants(data)
-        } catch (err) {
-            setError('Impossible de charger les restaurants')
-            console.error(err)
-        } finally {
-            setLoading(false)
-        }
-    }, [searchQuery])
+    // Favoris : spécifiques à l'utilisateur, gérés localement
+    const [favorites, setFavorites] = useState<string[]>([])
+    const { user } = useAuth()
 
     const loadFavorites = useCallback(async () => {
         if (!user) {
             setFavorites([])
             return
         }
-
         try {
             const favs = await getFavorites()
             setFavorites(favs)
@@ -44,28 +29,20 @@ export function useRestaurants() {
     }, [user])
 
     useEffect(() => {
-        loadRestaurants()
-    }, [loadRestaurants])
+        fetchRestaurants()
+    }, [fetchRestaurants])
 
     useEffect(() => {
         loadFavorites()
     }, [loadFavorites])
 
     const toggleFavorite = async (restaurantId: string) => {
-        if (!user) {
-            return false
-        }
-
+        if (!user) return false
         try {
             const isFav = await toggleFav(restaurantId)
-
-            // Mettre à jour l'état local
-            if (isFav) {
-                setFavorites((prev) => [...prev, restaurantId])
-            } else {
-                setFavorites((prev) => prev.filter((id) => id !== restaurantId))
-            }
-
+            setFavorites((prev) =>
+                isFav ? [...prev, restaurantId] : prev.filter((id) => id !== restaurantId),
+            )
             return isFav
         } catch (err) {
             console.error('Error toggling favorite:', err)
@@ -75,12 +52,8 @@ export function useRestaurants() {
 
     const isFavorite = (restaurantId: string) => favorites.includes(restaurantId)
 
-    const search = (query: string) => {
-        setSearchQuery(query)
-    }
-
     const refresh = () => {
-        loadRestaurants()
+        fetchRestaurants(true)
         loadFavorites()
     }
 
@@ -89,8 +62,6 @@ export function useRestaurants() {
         favorites,
         loading,
         error,
-        searchQuery,
-        search,
         refresh,
         toggleFavorite,
         isFavorite,

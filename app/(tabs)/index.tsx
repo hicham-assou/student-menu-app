@@ -18,20 +18,12 @@ import { SafeAreaView } from "react-native-safe-area-context"
 import { useRestaurants } from "@/hooks/useRestaurant"
 import { useUserLocation } from "@/hooks/useUserLocation"
 import { RestaurantCard } from "@/components/restaurant/RestaurantCard"
+import { RestaurantCardSkeleton } from "@/components/restaurant/RestaurantCardSkeleton"
 import { CustomAlertManager } from "@/components/customAlert/CustomAlert"
 import { CategoryRegimeModal } from "@/components/discovery/CategoryRegimeModal"
 import { isOpenNow } from "@/lib/hours"
+import { minMenuPrice } from "@/lib/price"
 import { calculateDistance } from "@/lib/utils"
-import type { Restaurant } from "@/types"
-
-function getMinMenuPrice(restaurant: Restaurant): number {
-    if (!restaurant.student_menu || restaurant.student_menu.length === 0) return 999999
-    const prices = restaurant.student_menu.map((menu) =>
-        Number.parseFloat(menu.price.replace("€", "").replace(",", ".").trim()),
-    )
-    const min = Math.min(...prices)
-    return isNaN(min) ? 999999 : min
-}
 
 export default function HomeScreen() {
     const colors = Colors.light
@@ -80,7 +72,7 @@ export default function HomeScreen() {
     const enriched = useMemo(() => {
         return restaurants.map((r) => ({
             restaurant: r,
-            minPrice: getMinMenuPrice(r),
+            minPrice: minMenuPrice(r.student_menu) ?? Number.POSITIVE_INFINITY,
             distance: location
                 ? calculateDistance(location.latitude, location.longitude, r.latitude, r.longitude)
                 : null,
@@ -247,7 +239,13 @@ export default function HomeScreen() {
                     ) : null
                 }
                 ListEmptyComponent={
-                    !loading ? (
+                    loading ? (
+                        <View style={styles.skeletonWrap}>
+                            {[0, 1, 2].map((i) => (
+                                <RestaurantCardSkeleton key={i} />
+                            ))}
+                        </View>
+                    ) : (
                         <View style={styles.emptyContainer}>
                             <Ionicons name="restaurant-outline" size={64} color={colors.textSecondary} />
                             <Text style={[styles.emptyText, { color: colors.text }]}>Aucun restaurant trouvé</Text>
@@ -263,7 +261,7 @@ export default function HomeScreen() {
                                 <Text style={styles.suggestTextEmpty}>Suggérer un resto</Text>
                             </TouchableOpacity>
                         </View>
-                    ) : null
+                    )
                 }
             />
 
@@ -447,6 +445,9 @@ const styles = StyleSheet.create({
     list: {
         paddingHorizontal: 16,
         paddingBottom: 110,
+        gap: 14,
+    },
+    skeletonWrap: {
         gap: 14,
     },
     errorContainer: {

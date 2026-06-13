@@ -4,6 +4,7 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
+import { formatPrice, minMenuPrice } from "@/lib/price"
 import type { Restaurant } from "@/types"
 
 interface RestaurantCardProps {
@@ -15,17 +16,7 @@ interface RestaurantCardProps {
 export function RestaurantCard({ restaurant, isFavorite, onToggleFavorite }: RestaurantCardProps) {
     const router = useRouter()
 
-    const getMinMenuPrice = () => {
-        if (!restaurant.student_menu || restaurant.student_menu.length === 0) return null
-        const prices = restaurant.student_menu.map((menu) => {
-            const priceStr = menu.price.replace("€", "").replace(",", ".").trim()
-            return Number.parseFloat(priceStr)
-        })
-        const minPrice = Math.min(...prices)
-        return isNaN(minPrice) ? null : minPrice
-    }
-
-    const minPrice = getMinMenuPrice()
+    const minPrice = minMenuPrice(restaurant.student_menu)
     const menuCount = restaurant.student_menu?.length ?? 0
 
     return (
@@ -91,9 +82,7 @@ export function RestaurantCard({ restaurant, isFavorite, onToggleFavorite }: Res
                 {minPrice !== null && (
                     <View style={styles.pricePill}>
                         <Text style={styles.priceFrom}>dès</Text>
-                        <Text style={styles.priceValue}>
-                            {minPrice.toFixed(2).replace(".", ",")}€
-                        </Text>
+                        <Text style={styles.priceValue}>{formatPrice(minPrice)}</Text>
                     </View>
                 )}
             </View>
