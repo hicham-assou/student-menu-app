@@ -5,7 +5,7 @@ export async function getRestaurants(): Promise<Restaurant[]> {
     const { data, error } = await supabase
         .from('restaurants')
         .select('*')
-        .eq('subscription_status', 'active')
+        .in('subscription_status', ['active', 'trial'])
         .order('name')
 
     if (error) throw error
@@ -27,7 +27,7 @@ export async function searchRestaurants(query: string): Promise<Restaurant[]> {
     const { data, error } = await supabase
         .from('restaurants')
         .select('*')
-        .eq('subscription_status', 'active')
+        .in('subscription_status', ['active', 'trial'])
         .or(`name.ilike.%${query}%,address.ilike.%${query}%`)
         .order('name')
 
