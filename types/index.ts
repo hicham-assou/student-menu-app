@@ -35,6 +35,7 @@ export interface Restaurant {
     subscription_start_date?: string | null
     subscription_end_date?: string | null
     subscription_price?: number | null
+    subscription_period?: 'monthly' | 'yearly' | null
     notes?: string | null
     contact_email?: string | null
     contact_person?: string | null

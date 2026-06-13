@@ -48,8 +48,19 @@ export function SubscriptionCard({ restaurant }: Props) {
                         ? `${end} (expiré)`
                         : end,
         })
-    if (restaurant.subscription_price != null)
-        rows.push({ icon: "pricetag-outline", label: "Tarif", value: formatPrice(restaurant.subscription_price) })
+    if (restaurant.subscription_price != null) {
+        const period =
+            restaurant.subscription_period === "yearly"
+                ? " / an"
+                : restaurant.subscription_period === "monthly"
+                    ? " / mois"
+                    : ""
+        rows.push({
+            icon: "pricetag-outline",
+            label: "Tarif",
+            value: `${formatPrice(restaurant.subscription_price)}${period}`,
+        })
+    }
     if (restaurant.contact_person)
         rows.push({ icon: "person-outline", label: "Contact", value: restaurant.contact_person })
     if (restaurant.contact_email)
