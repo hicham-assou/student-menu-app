@@ -19,7 +19,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Colors } from "@/constants/Colors"
 import { useAuth } from "@/contexts/AuthContext"
-import { getRestaurants } from "@/lib/api"
+import { useRestaurantStore } from "@/stores/restaurants"
 import { isFavorite as checkFavorite, toggleFavorite } from "@/lib/favorites"
 import { getRestaurantReviews, getRestaurantReviewStats, getUserReview } from "@/lib/reviews"
 import { isRestaurantOwner } from "@/lib/restaurants"
@@ -80,8 +80,11 @@ export default function RestaurantDetailScreen() {
     const loadRestaurant = useCallback(async () => {
         if (!id) return
         try {
-            const restaurants = await getRestaurants()
-            const found = restaurants.find((r) => r.id === id)
+            let found = useRestaurantStore.getState().getById(id)
+            if (!found) {
+                await useRestaurantStore.getState().fetch()
+                found = useRestaurantStore.getState().getById(id)
+            }
             setRestaurant(found || null)
         } catch (error) {
             console.error("Error loading restaurant:", error)

@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/Button"
 import type { Restaurant, WeeklyHours } from "@/types"
 import { getCategory, getTag } from "@/constants/discovery"
 import { priceToNumber } from "@/lib/price"
+import { useRestaurantStore } from "@/stores/restaurants"
 import { HoursEditor } from "@/components/owner/HoursEditor"
 import { CategoryRegimeModal } from "@/components/discovery/CategoryRegimeModal"
 import * as ImagePicker from "expo-image-picker"
@@ -314,6 +315,8 @@ export default function EditRestaurantScreen() {
             if (error) throw error
 
             if (data && data.length > 0) {
+                // Invalide le cache pour que les changements apparaissent partout
+                useRestaurantStore.getState().fetch(true)
                 CustomAlertManager.alert("Succès", "Restaurant mis à jour avec succès", "success", [
                     { text: "OK", onPress: () => router.back() },
                 ])

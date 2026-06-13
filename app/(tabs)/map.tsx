@@ -12,9 +12,9 @@ import MapView, { Circle } from "react-native-maps"
 import { Ionicons } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
 import { Colors } from "@/constants/Colors"
-import { getRestaurants } from "@/lib/api"
 import { calculateDistance } from "@/lib/utils"
 import { minMenuPrice } from "@/lib/price"
+import { useRestaurantStore } from "@/stores/restaurants"
 import { useUserLocation } from "@/hooks/useUserLocation"
 import { CustomAlertManager } from "@/components/customAlert/CustomAlert"
 import { RestaurantMarker, type PriceTier } from "@/components/map/RestaurantMarker"
@@ -55,8 +55,9 @@ export default function MapScreen() {
     const colors = Colors.light
     const mapRef = useRef<MapView>(null)
 
-    const [restaurants, setRestaurants] = useState<Restaurant[]>([])
-    const [loading, setLoading] = useState(true)
+    const restaurants = useRestaurantStore((s) => s.restaurants)
+    const loading = useRestaurantStore((s) => s.loading)
+    const fetchRestaurants = useRestaurantStore((s) => s.fetch)
     const [selectedId, setSelectedId] = useState<string | null>(null)
     const [filters, setFilters] = useState<MapFilterState>({
         search: "",
@@ -73,25 +74,10 @@ export default function MapScreen() {
         isAvailable: locAvailable,
     } = useUserLocation({ autoRequest: true })
 
-    // Charger les restaurants
+    // Charger les restaurants (depuis le cache partagé si dispo)
     useEffect(() => {
-        ;(async () => {
-            try {
-                setLoading(true)
-                const data = await getRestaurants()
-                setRestaurants(data)
-            } catch (err) {
-                console.error("[MapScreen] load error:", err)
-                CustomAlertManager.alert(
-                    "Erreur",
-                    "Impossible de charger les restaurants",
-                    "error",
-                )
-            } finally {
-                setLoading(false)
-            }
-        })()
-    }, [])
+        fetchRestaurants()
+    }, [fetchRestaurants])
 
     // Centrer la carte sur l'utilisateur des qu'on a sa position
     useEffect(() => {
@@ -211,7 +197,7 @@ export default function MapScreen() {
         )
     }
 
-    if (loading) {
+    if (loading && restaurants.length === 0) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
                 <View style={styles.loadingContainer}>
