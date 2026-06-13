@@ -14,6 +14,7 @@ import { useRouter } from "expo-router"
 import { Colors } from "@/constants/Colors"
 import { getRestaurants } from "@/lib/api"
 import { calculateDistance } from "@/lib/utils"
+import { minMenuPrice } from "@/lib/price"
 import { useUserLocation } from "@/hooks/useUserLocation"
 import { CustomAlertManager } from "@/components/customAlert/CustomAlert"
 import { RestaurantMarker, type PriceTier } from "@/components/map/RestaurantMarker"
@@ -40,14 +41,6 @@ const DEFAULT_REGION = {
 interface RestaurantWithPrice extends Restaurant {
     _minPrice: number | null
     _tier: PriceTier
-}
-
-function computeMinPrice(restaurant: Restaurant): number | null {
-    if (!restaurant.student_menu || restaurant.student_menu.length === 0) return null
-    const prices = restaurant.student_menu
-        .map((m) => Number.parseFloat(m.price.replace("€", "").replace(",", ".").trim()))
-        .filter((n) => !Number.isNaN(n))
-    return prices.length > 0 ? Math.min(...prices) : null
 }
 
 function computeTier(minPrice: number | null): PriceTier {
@@ -118,7 +111,7 @@ export default function MapScreen() {
     // Pre-calculer prix min + tier pour chaque resto (memo)
     const enrichedRestaurants = useMemo<RestaurantWithPrice[]>(() => {
         return restaurants.map((r) => {
-            const minPrice = computeMinPrice(r)
+            const minPrice = minMenuPrice(r.student_menu)
             return { ...r, _minPrice: minPrice, _tier: computeTier(minPrice) }
         })
     }, [restaurants])

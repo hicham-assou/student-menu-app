@@ -12,6 +12,7 @@ import { LinearGradient } from "expo-linear-gradient"
 import { Ionicons } from "@expo/vector-icons"
 import type { Restaurant } from "@/types"
 import { calculateDistance, formatDistance, openDirections } from "@/lib/utils"
+import { formatPrice } from "@/lib/price"
 
 interface RestaurantPreviewCardProps {
     restaurant: Restaurant
@@ -120,7 +121,7 @@ export function RestaurantPreviewCard({
                                     {item.title}
                                 </Text>
                             </View>
-                            <Text style={styles.menuPrice}>{item.price}</Text>
+                            <Text style={styles.menuPrice}>{formatPrice(item.price)}</Text>
                         </View>
                     ))}
                     {restaurant.student_menu.length > previewMenu.length && (

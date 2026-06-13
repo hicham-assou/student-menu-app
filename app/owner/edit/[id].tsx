@@ -24,6 +24,7 @@ import { isRestaurantOwner } from "@/lib/restaurants"
 import { Button } from "@/components/ui/Button"
 import type { Restaurant, WeeklyHours } from "@/types"
 import { getCategory, getTag } from "@/constants/discovery"
+import { priceToNumber } from "@/lib/price"
 import { HoursEditor } from "@/components/owner/HoursEditor"
 import { CategoryRegimeModal } from "@/components/discovery/CategoryRegimeModal"
 import * as ImagePicker from "expo-image-picker"
@@ -154,7 +155,7 @@ export default function EditRestaurantScreen() {
                 setStudentMenus(
                     found.student_menu?.map((menu) => ({
                         title: menu.title,
-                        price: menu.price.replace("€", "").trim(), // Remove € for editing
+                        price: priceToNumber(menu.price)?.toString() ?? "", // nombre -> texte pour l'edition
                         image_url: menu.image_url || "",
                     })) || [],
                 )
@@ -289,7 +290,7 @@ export default function EditRestaurantScreen() {
 
             const formattedMenus = validMenus.map((menu) => ({
                 title: menu.title,
-                price: menu.price.trim() ? `${menu.price.trim()}€` : "", // Add € when saving
+                price: priceToNumber(menu.price) ?? 0, // stocke un nombre
                 image_url: menu.image_url || "",
             }))
 

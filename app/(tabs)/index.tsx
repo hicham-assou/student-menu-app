@@ -21,17 +21,8 @@ import { RestaurantCard } from "@/components/restaurant/RestaurantCard"
 import { CustomAlertManager } from "@/components/customAlert/CustomAlert"
 import { CategoryRegimeModal } from "@/components/discovery/CategoryRegimeModal"
 import { isOpenNow } from "@/lib/hours"
+import { minMenuPrice } from "@/lib/price"
 import { calculateDistance } from "@/lib/utils"
-import type { Restaurant } from "@/types"
-
-function getMinMenuPrice(restaurant: Restaurant): number {
-    if (!restaurant.student_menu || restaurant.student_menu.length === 0) return 999999
-    const prices = restaurant.student_menu.map((menu) =>
-        Number.parseFloat(menu.price.replace("€", "").replace(",", ".").trim()),
-    )
-    const min = Math.min(...prices)
-    return isNaN(min) ? 999999 : min
-}
 
 export default function HomeScreen() {
     const colors = Colors.light
@@ -80,7 +71,7 @@ export default function HomeScreen() {
     const enriched = useMemo(() => {
         return restaurants.map((r) => ({
             restaurant: r,
-            minPrice: getMinMenuPrice(r),
+            minPrice: minMenuPrice(r.student_menu) ?? Number.POSITIVE_INFINITY,
             distance: location
                 ? calculateDistance(location.latitude, location.longitude, r.latitude, r.longitude)
                 : null,

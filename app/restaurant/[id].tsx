@@ -34,6 +34,7 @@ import type { Restaurant, Review } from "@/types"
 import { LinearGradient } from "expo-linear-gradient"
 import { getCategory, getTag, DAY_ORDER, DAY_SHORT } from "@/constants/discovery"
 import { getOpenStatus, hasAnyHours, formatPeriods } from "@/lib/hours"
+import { formatPrice, priceToNumber } from "@/lib/price"
 
 const { width } = Dimensions.get("window")
 const MENU_CARD_WIDTH = width * 0.66
@@ -214,7 +215,7 @@ export default function RestaurantDetailScreen() {
         try {
             const link = `${SHARE_BASE_URL}/r.html?id=${restaurant.id}&name=${encodeURIComponent(restaurant.name)}`
             const priceLine =
-                sortedMenus.length > 0 ? `\nMenu étudiant dès ${sortedMenus[0].price}` : ""
+                sortedMenus.length > 0 ? `\nMenu étudiant dès ${formatPrice(sortedMenus[0].price)}` : ""
             await Share.share({
                 title: restaurant.name,
                 message:
@@ -255,8 +256,8 @@ export default function RestaurantDetailScreen() {
     }
 
     const sortedMenus = [...(restaurant.student_menu || [])].sort((a, b) => {
-        const priceA = Number.parseFloat(a.price.replace("€", "").replace(",", "."))
-        const priceB = Number.parseFloat(b.price.replace("€", "").replace(",", "."))
+        const priceA = priceToNumber(a.price) ?? Number.POSITIVE_INFINITY
+        const priceB = priceToNumber(b.price) ?? Number.POSITIVE_INFINITY
         return priceA - priceB
     })
 
@@ -455,14 +456,14 @@ export default function RestaurantDetailScreen() {
                                             <View style={styles.menuImageWrap}>
                                                 <Image source={{ uri: item.image_url }} style={styles.menuImage} resizeMode="cover" />
                                                 <View style={styles.menuPriceFloat}>
-                                                    <Text style={styles.menuPriceFloatText}>{item.price}</Text>
+                                                    <Text style={styles.menuPriceFloatText}>{formatPrice(item.price)}</Text>
                                                 </View>
                                             </View>
                                         ) : (
                                             <View style={[styles.menuImageWrap, styles.menuPlaceholder]}>
                                                 <Ionicons name="fast-food-outline" size={34} color={palette.orange} />
                                                 <View style={styles.menuPriceFloat}>
-                                                    <Text style={styles.menuPriceFloatText}>{item.price}</Text>
+                                                    <Text style={styles.menuPriceFloatText}>{formatPrice(item.price)}</Text>
                                                 </View>
                                             </View>
                                         )}
