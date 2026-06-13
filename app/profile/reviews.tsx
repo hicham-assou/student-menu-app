@@ -56,7 +56,13 @@ export default function MyReviewsScreen() {
                 .order("created_at", {ascending: false})
 
             if (error) throw error
-            setReviews(data || [])
+            // Supabase renvoie la relation `restaurant` sous forme de tableau : on l'aplatit
+            setReviews(
+                ((data as any[]) || []).map((r) => ({
+                    ...r,
+                    restaurant: Array.isArray(r.restaurant) ? r.restaurant[0] : r.restaurant,
+                })),
+            )
         } catch (error) {
             console.error("Error fetching reviews:", error)
         } finally {

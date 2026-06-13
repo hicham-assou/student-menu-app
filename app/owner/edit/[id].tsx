@@ -54,7 +54,6 @@ export default function EditRestaurantScreen() {
     const [description, setDescription] = useState("")
     const [isGeocodingAddress, setIsGeocodingAddress] = useState(false)
     const [studentMenuConditions, setStudentMenuConditions] = useState("")
-    const [imageUrl, setImageUrl] = useState("")
     const [categories, setCategories] = useState<string[]>([])
     const [tags, setTags] = useState<string[]>([])
     const [hours, setHours] = useState<WeeklyHours>({})
@@ -152,7 +151,6 @@ export default function EditRestaurantScreen() {
                 setPhone(found.phone || "")
                 setDescription(found.description || "")
                 setImage(found.image || "")
-                setImageUrl(found.image_url || "")
                 setStudentMenus(
                     found.student_menu?.map((menu) => ({
                         title: menu.title,
@@ -815,15 +813,6 @@ const styles = StyleSheet.create({
         width: "100%",
         height: "100%",
         resizeMode: "cover",
-    },
-    imagePlaceholder: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    imagePlaceholderText: {
-        marginTop: 12,
-        fontSize: 16,
     },
     uploadingOverlay: {
         ...StyleSheet.absoluteFillObject,
