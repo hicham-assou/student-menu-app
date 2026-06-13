@@ -27,6 +27,7 @@ import { trackEvent } from "@/lib/analytics"
 import { ReviewStats } from "@/components/reviews/ReviewStats"
 import { ReviewForm } from "@/components/reviews/ReviewForm"
 import { ReviewCard } from "@/components/reviews/ReviewCard"
+import { SubscriptionCard } from "@/components/restaurant/SubscriptionCard"
 import { AuthModal } from "@/components/ui/AutoModal"
 import { useNavigation } from "expo-router"
 import { CustomAlertManager } from "@/components/customAlert/CustomAlert"
@@ -232,6 +233,13 @@ export default function RestaurantDetailScreen() {
         }
     }
 
+    const handleWebsite = () => {
+        if (!restaurant?.website) return
+        let url = restaurant.website.trim()
+        if (!/^https?:\/\//i.test(url)) url = `https://${url}`
+        Linking.openURL(url).catch(() => {})
+    }
+
     const handleReportError = () => {
         if (!restaurant) return
         router.push(
@@ -379,6 +387,25 @@ export default function RestaurantDetailScreen() {
                             <Text style={styles.actionBtnSecondaryText}>Itinéraire</Text>
                         </TouchableOpacity>
                     </View>
+
+                    {/* Site web */}
+                    {restaurant.website ? (
+                        <TouchableOpacity style={styles.infoCard} onPress={handleWebsite} activeOpacity={0.7}>
+                            <View style={styles.infoIcon}>
+                                <Ionicons name="globe-outline" size={20} color={palette.orange} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.infoLabel}>Site web</Text>
+                                <Text style={[styles.infoValue, { color: palette.orange }]} numberOfLines={1}>
+                                    {restaurant.website.replace(/^https?:\/\//i, "").replace(/\/$/, "")}
+                                </Text>
+                            </View>
+                            <Ionicons name="open-outline" size={18} color={palette.gray400} />
+                        </TouchableOpacity>
+                    ) : null}
+
+                    {/* Abonnement (gérant uniquement) */}
+                    {isOwner && <SubscriptionCard restaurant={restaurant} />}
 
                     {/* Horaires */}
                     {hasAnyHours(restaurant.hours) && (

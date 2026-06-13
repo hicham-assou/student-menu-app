@@ -51,6 +51,7 @@ export default function EditRestaurantScreen() {
     const [address, setAddress] = useState("")
     const [city, setCity] = useState("")
     const [phone, setPhone] = useState("")
+    const [website, setWebsite] = useState("")
     const [description, setDescription] = useState("")
     const [isGeocodingAddress, setIsGeocodingAddress] = useState(false)
     const [studentMenuConditions, setStudentMenuConditions] = useState("")
@@ -149,6 +150,7 @@ export default function EditRestaurantScreen() {
                 setAddress(found.address || "")
                 setCity(found.city || "")
                 setPhone(found.phone || "")
+                setWebsite(found.website || "")
                 setDescription(found.description || "")
                 setImage(found.image || "")
                 setStudentMenus(
@@ -298,6 +300,7 @@ export default function EditRestaurantScreen() {
                 address,
                 city,
                 phone,
+                website,
                 hours: Object.keys(hours).length > 0 ? hours : null,
                 categories,
                 tags,
@@ -476,6 +479,26 @@ export default function EditRestaurantScreen() {
                                 placeholder="Ex: 01 23 45 67 89"
                                 placeholderTextColor={colors.textSecondary}
                                 keyboardType="phone-pad"
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={[styles.label, { color: colors.text }]}>Site web</Text>
+                            <TextInput
+                                style={[
+                                    styles.input,
+                                    {
+                                        backgroundColor: colors.surface,
+                                        color: colors.text,
+                                        borderColor: colors.border,
+                                    },
+                                ]}
+                                value={website}
+                                onChangeText={setWebsite}
+                                placeholder="Ex: https://monresto.be"
+                                placeholderTextColor={colors.textSecondary}
+                                autoCapitalize="none"
+                                keyboardType="url"
                             />
                         </View>
 

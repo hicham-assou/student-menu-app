@@ -21,6 +21,7 @@ export interface Restaurant {
     latitude: number
     longitude: number
     phone?: string
+    website?: string
     description?: string
     hours?: WeeklyHours | null
     categories?: string[]
@@ -29,7 +30,15 @@ export interface Restaurant {
     student_menu: MenuItem[]
     student_menu_conditions?: string
     created_at?: string
-    subscription_status: 'active' | 'inactive' | 'expired'
+    // Abonnement / suivi (visible par le gérant)
+    subscription_status: 'active' | 'trial' | 'inactive' | 'expired'
+    subscription_start_date?: string | null
+    subscription_end_date?: string | null
+    subscription_price?: number | null
+    notes?: string | null
+    contact_email?: string | null
+    contact_person?: string | null
+    last_contact_date?: string | null
     owner_id?: string
 }
 
