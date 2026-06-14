@@ -21,6 +21,8 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.studentfood.app",
+      // Icone App Store : 1024x1024 sans transparence (exigee par Apple)
+      icon: "./assets/images/icon-ios.png",
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           "Stud'Table utilise ta position pour trouver les restaurants près de toi.",
@@ -28,6 +30,9 @@ export default {
           "Stud'Table utilise la caméra pour prendre des photos.",
         NSPhotoLibraryUsageDescription:
           "Stud'Table accède à ta galerie pour choisir des photos de profil ou de restaurant.",
+        // L'app n'utilise pas de chiffrement non-exempte : evite la question
+        // "export compliance" a chaque soumission.
+        ITSAppUsesNonExemptEncryption: false,
       },
     },
     android: {
@@ -83,6 +88,9 @@ export default {
             "Stud'Table utilise la caméra pour prendre des photos.",
         },
       ],
+      // Necessaire pour generer l'entitlement aps-environment (push iOS).
+      // Sans ce plugin, getDevicePushTokenAsync() echoue en build standalone.
+      "expo-notifications",
     ],
     extra: {
       router: {},
