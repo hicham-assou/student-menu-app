@@ -20,7 +20,7 @@ export default {
     assetBundlePatterns: ["**/*"],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.studentfood.app",
+      bundleIdentifier: "com.studtable.app",
       // Icone App Store : 1024x1024 sans transparence (exigee par Apple)
       icon: "./assets/images/icon-ios.png",
       infoPlist: {
@@ -40,7 +40,7 @@ export default {
         foregroundImage: "./assets/images/adaptive-icon.png",
         backgroundColor: "#ffffff",
       },
-      package: "com.Studentfood.app",
+      package: "com.studtable.app",
       config: {
         googleMaps: {
           apiKey: process.env.GOOGLE_MAPS_API_KEY_ANDROID,

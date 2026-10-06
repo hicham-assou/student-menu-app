@@ -339,7 +339,7 @@ export default function EditRestaurantScreen() {
                 `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`,
                 {
                     headers: {
-                        "User-Agent": "StudentFood/1.0 (Restaurant Management App)",
+                        "User-Agent": "StudTable/1.0 (Restaurant Management App)",
                     },
                 },
             )
