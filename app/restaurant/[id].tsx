@@ -7,7 +7,6 @@ import {
     Platform,
     RefreshControl,
     ScrollView,
-    Share,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -40,9 +39,6 @@ import { formatPrice, priceToNumber } from "@/lib/price"
 const { width } = Dimensions.get("window")
 const MENU_CARD_WIDTH = width * 0.66
 const MENU_CARD_SPACING = 12
-
-// Base des liens de partage (pages hebergees via GitHub Pages, dossier /docs)
-const SHARE_BASE_URL = "https://hicham-assou.github.io/student-menu-app"
 
 const palette = {
     orange: "#F97316",
@@ -214,25 +210,6 @@ export default function RestaurantDetailScreen() {
         }
     }
 
-    const handleShare = async () => {
-        if (!restaurant) return
-        try {
-            const link = `${SHARE_BASE_URL}/r.html?id=${restaurant.id}&name=${encodeURIComponent(restaurant.name)}`
-            const priceLine =
-                sortedMenus.length > 0 ? `\nMenu étudiant dès ${formatPrice(sortedMenus[0].price)}` : ""
-            await Share.share({
-                title: restaurant.name,
-                message:
-                    `${restaurant.name} sur Stud'Table 🍽️${priceLine}\n` +
-                    `📍 ${restaurant.address}, ${restaurant.city}\n\n` +
-                    `👉 ${link}`,
-                url: link,
-            })
-        } catch (error) {
-            console.error("Error sharing:", error)
-        }
-    }
-
     const handleWebsite = () => {
         if (!restaurant?.website) return
         let url = restaurant.website.trim()
@@ -313,9 +290,7 @@ export default function RestaurantDetailScreen() {
                         <LinearGradient colors={["transparent", "rgba(0,0,0,0.45)"]} style={styles.imageGradient} />
 
                         <View style={styles.imageActions}>
-                            <TouchableOpacity onPress={handleShare} style={styles.imageBtn}>
-                                <Ionicons name="share-social-outline" size={18} color={palette.white} />
-                            </TouchableOpacity>
+                            {/* Bouton Partager retiré temporairement — à remettre après le lancement */}
                             {isOwner && (
                                 <TouchableOpacity onPress={() => router.push(`/owner/edit/${id}`)} style={styles.imageBtn}>
                                     <Ionicons name="create-outline" size={19} color={palette.white} />
