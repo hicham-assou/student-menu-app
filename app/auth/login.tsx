@@ -29,12 +29,13 @@ export default function LoginScreen() {
             const {error} = await signIn(email, password)
 
             if (error) {
-                let errorMessage = error.message
-                if (error.message.includes("Invalid login credentials")) {
+                const raw = (error.message || "").toLowerCase()
+                let errorMessage = "Une erreur est survenue lors de la connexion. Réessaie."
+                if (raw.includes("invalid login credentials")) {
                     errorMessage = "Email ou mot de passe incorrect"
-                } else if (error.message.includes("Email not confirmed")) {
+                } else if (raw.includes("email not confirmed")) {
                     errorMessage = "Merci de confirmer ton email avant de te connecter"
-                } else if (error.message.includes("Invalid email")) {
+                } else if (raw.includes("invalid email")) {
                     errorMessage = "Format d'email invalide"
                 }
 
@@ -64,10 +65,11 @@ export default function LoginScreen() {
             const {error} = await supabase.auth.resetPasswordForEmail(email)
 
             if (error) {
-                let errorMessage = error.message
-                if (error.message.includes("Invalid email")) {
+                const raw = (error.message || "").toLowerCase()
+                let errorMessage = "Impossible d'envoyer l'email pour le moment. Réessaie."
+                if (raw.includes("invalid email")) {
                     errorMessage = "Format d'email invalide"
-                } else if (error.message.includes("not found")) {
+                } else if (raw.includes("not found")) {
                     errorMessage = "Aucun compte ne correspond à cet email"
                 }
                 throw new Error(errorMessage)

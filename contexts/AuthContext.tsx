@@ -88,14 +88,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (error) return { error }
 
-            // Créer le profil après inscription
+            // Supabase renvoie un utilisateur sans "identities" quand l'email est
+            // deja enregistre (protection anti-enumeration) : on le traite comme un doublon.
+            if (data.user && data.user.identities && data.user.identities.length === 0) {
+                return { error: { message: "User already registered" } }
+            }
+
+            // Cree le profil de maniere idempotente : si une ligne existe deja
+            // (nouvel essai, ou creee par un trigger cote DB), on ne replante pas.
             if (data.user) {
-                const { error: profileError } = await supabase.from("profiles").insert({
-                    id: data.user.id,
-                    email: data.user.email!,
-                    full_name: fullName,
-                    role: role,
-                })
+                const { error: profileError } = await supabase.from("profiles").upsert(
+                    {
+                        id: data.user.id,
+                        email: data.user.email!,
+                        full_name: fullName,
+                        role: role,
+                    },
+                    { onConflict: "id", ignoreDuplicates: true },
+                )
 
                 if (profileError) return { error: profileError }
             }
