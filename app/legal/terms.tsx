@@ -13,7 +13,7 @@ export default function TermsScreen() {
             <Stack.Screen options={{title: "Conditions d'utilisation", headerBackTitle: "Retour"}}/>
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 <Text style={[styles.title, {color: colors.text}]}>Conditions Générales d'Utilisation</Text>
-                <Text style={[styles.date, {color: colors.textSecondary}]}>Dernière mise à jour : Décembre 2024</Text>
+                <Text style={[styles.date, {color: colors.textSecondary}]}>Dernière mise à jour : 1er novembre 2026</Text>
 
                 <Text style={[styles.sectionTitle, {color: colors.text}]}>1. Acceptation des conditions</Text>
                 <Text style={[styles.paragraph, {color: colors.text}]}>
