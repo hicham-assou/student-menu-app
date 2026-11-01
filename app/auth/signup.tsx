@@ -63,12 +63,19 @@ export default function SignupScreen() {
             const {error} = await signUp(email, password, fullName || "", "student")
 
             if (error) {
-                let errorMessage = error.message
-                if (error.message.includes("already registered")) {
+                const raw = (error.message || "").toLowerCase()
+                // Par defaut : message generique (jamais l'erreur technique brute)
+                let errorMessage = "Une erreur est survenue lors de l'inscription. Réessaie."
+                if (
+                    raw.includes("already registered") ||
+                    raw.includes("duplicate key") ||
+                    raw.includes("already exists") ||
+                    raw.includes("profiles_pkey")
+                ) {
                     errorMessage = "Cet email est déjà utilisé"
-                } else if (error.message.includes("Invalid email")) {
+                } else if (raw.includes("invalid email")) {
                     errorMessage = "Format d'email invalide"
-                } else if (error.message.includes("Password")) {
+                } else if (raw.includes("password")) {
                     errorMessage = "Le mot de passe ne respecte pas les critères de sécurité"
                 }
 
