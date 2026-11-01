@@ -84,6 +84,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
+                // Metadonnees : reprises par un eventuel trigger `handle_new_user`.
+                options: { data: { full_name: fullName, role } },
             })
 
             if (error) return { error }
@@ -94,8 +96,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return { error: { message: "User already registered" } }
             }
 
-            // Cree le profil de maniere idempotente : si une ligne existe deja
-            // (nouvel essai, ou creee par un trigger cote DB), on ne replante pas.
+            // Upsert du profil : si la ligne existe deja (creee par un trigger cote DB),
+            // on la MET A JOUR avec le nom/role choisis (sinon full_name resterait vide).
+            // onConflict sans ignoreDuplicates => INSERT ... ON CONFLICT DO UPDATE.
             if (data.user) {
                 const { error: profileError } = await supabase.from("profiles").upsert(
                     {
@@ -104,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         full_name: fullName,
                         role: role,
                     },
-                    { onConflict: "id", ignoreDuplicates: true },
+                    { onConflict: "id" },
                 )
 
                 if (profileError) return { error: profileError }
