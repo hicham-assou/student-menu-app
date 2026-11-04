@@ -62,19 +62,10 @@ export default function EditRestaurantScreen() {
 
     useEffect(() => {
         loadRestaurant()
-        requestPermissions()
     }, [id])
 
-    const requestPermissions = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
-        if (status !== "granted") {
-            CustomAlertManager.alert(
-                "Permission requise",
-                "Nous avons besoin de la permission pour accéder à ta galerie.",
-                "warning",
-            )
-        }
-    }
+    // Pas de demande de permission galerie : launchImageLibraryAsync utilise le
+    // selecteur systeme (Photo Picker Android / PHPicker iOS) qui n'en requiert pas.
 
     const pickImage = async () => {
         try {
@@ -193,13 +184,6 @@ export default function EditRestaurantScreen() {
 
     const pickMenuImage = async (menuIndex: number) => {
         try {
-            const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
-
-            if (!permissionResult.granted) {
-                CustomAlertManager.alert("Permission refusée", "Vous devez autoriser l'accès à la galerie", "error")
-                return
-            }
-
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ['images'],
                 allowsEditing: true,

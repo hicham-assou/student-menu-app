@@ -43,13 +43,6 @@ export default function ProfileScreen() {
 
     const pickAndUploadAvatar = async () => {
         try {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
-
-            if (status !== "granted") {
-                CustomAlertManager.alert("Permission refusée", "Nous avons besoin d'accéder à ta galerie", "warning")
-                return
-            }
-
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ['images'],
                 allowsEditing: true,
